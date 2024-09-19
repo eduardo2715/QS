@@ -27,11 +27,17 @@ function Serialize(a : aexpr) : seq<code>
 /*
   Ex1.1
 */
-function Deserialize(cs : seq<code>, aexprs : seq<aexpr>) : seq<aexpr> 
+
+function Deserialize(cs : seq<code>) : seq<aexpr> 
+{
+  DeserializeAux(cs, [])
+}
+
+function DeserializeAux(cs : seq<code>, aexprs : seq<aexpr>) : seq<aexpr> 
 {
   if (|cs| == 0)
   then aexprs
-  else Deserialize(cs[1..], DeserializeCode(cs[0], aexprs))
+  else DeserializeAux(cs[1..], DeserializeCode(cs[0], aexprs))
 }
 
 function DeserializeCode(c : code, aexprs : seq<aexpr>) : seq<aexpr> 
@@ -40,7 +46,7 @@ function DeserializeCode(c : code, aexprs : seq<aexpr>) : seq<aexpr>
     case VarCode(a) => [Var(a)] + aexprs
     case ValCode(n) => [Val(n)] + aexprs
     case UnOpCode(u)  => if (|aexprs| >= 1)then[UnOp(u, aexprs[0])] + aexprs[1..] else[]
-    case BinOpCode(b)  =>  if (|aexprs| >= 2)then[BinOp(b, aexprs[1], aexprs[0])] + aexprs[2..] else[]
+    case BinOpCode(b)  =>  if (|aexprs| >= 2)then[BinOp(b, aexprs[0], aexprs[1])] + aexprs[2..] else[]
   }
 }
 
@@ -48,77 +54,85 @@ function DeserializeCode(c : code, aexprs : seq<aexpr>) : seq<aexpr>
 /*
   Ex1.2
 */
-lemma DeserializeProperty(e : aexpr, cs : seq<code>, es : seq<aexpr>)
-  ensures Deserialize(Serialize(e) + cs, es) == Deserialize(cs, [e] + es)
+
+lemma DeserializeProperty(e : aexpr)
+  ensures Deserialize(Serialize(e)) == [ e ]
+{
+  
+}
+
+
+lemma DeserializePropertyAux(e : aexpr, cs : seq<code>, es : seq<aexpr>)
+  ensures DeserializeAux(Serialize(e) + cs, es) == DeserializeAux(cs, [e] + es)
   decreases e
 {
  match (e){
   case Var(a) =>
    calc{
-    Deserialize(Serialize(e) + cs, es);
+    DeserializeAux(Serialize(e) + cs, es);
     ==
-    Deserialize(Serialize(Var(a)) + cs, es);
+    DeserializeAux(Serialize(Var(a)) + cs, es);
     ==
-    Deserialize([VarCode(a)] + cs, es);
+    DeserializeAux([VarCode(a)] + cs, es);
     ==
-    Deserialize(cs, [Var(a)] + es);
+    DeserializeAux(cs, [Var(a)] + es);
     ==
-    Deserialize(cs, [e] + es);
+    DeserializeAux(cs, [e] + es);
    }
   case Val(n) =>
     calc{
-    Deserialize(Serialize(e) + cs, es);
+    DeserializeAux(Serialize(e) + cs, es);
     ==
-    Deserialize(Serialize(Val(n)) + cs, es);
+    DeserializeAux(Serialize(Val(n)) + cs, es);
     ==
-    Deserialize([ValCode(n)] + cs, es);
+    DeserializeAux([ValCode(n)] + cs, es);
     ==
-    Deserialize(cs, [Val(n)] + es);
+    DeserializeAux(cs, [Val(n)] + es);
     ==
-    Deserialize(cs, [e] + es);
+    DeserializeAux(cs, [e] + es);
 
    }
   case UnOp(u, a) =>
     calc{
-      Deserialize(Serialize(e) + cs, es);
+      DeserializeAux(Serialize(e) + cs, es);
       ==
-      Deserialize(Serialize(UnOp(u, a)) + cs, es);
+      DeserializeAux(Serialize(UnOp(u, a)) + cs, es);
       ==
-      Deserialize(Serialize(a) + [ UnOpCode(u) ] + cs, es);
+      DeserializeAux(Serialize(a) + [ UnOpCode(u) ] + cs, es);
       == {
         assert Serialize(a) + [ UnOpCode(u) ] + cs == Serialize(a) + ([ UnOpCode(u) ] + cs); 
-        DeserializeProperty(a, [ UnOpCode(u) ] + cs, es); 
+        DeserializePropertyAux(a, [ UnOpCode(u) ] + cs, es); 
       }
-      Deserialize([ UnOpCode(u) ] + cs, [a] + es);
+      DeserializeAux([ UnOpCode(u) ] + cs, [a] + es);
       ==
-      Deserialize(cs, [UnOp(u, a)] + es);
+      DeserializeAux(cs, [UnOp(u, a)] + es);
       ==
-      Deserialize(cs, [e] + es);
+      DeserializeAux(cs, [e] + es);
     }
   case BinOp(b, a1, a2) => 
     calc{
-      Deserialize(Serialize(e) + cs, es);
+      DeserializeAux(Serialize(e) + cs, es);
       ==
-      Deserialize(Serialize(BinOp(b, a1, a2)) + cs, es);
+      DeserializeAux(Serialize(BinOp(b, a1, a2)) + cs, es);
       ==
-      Deserialize(Serialize(a2) + Serialize(a1) + [ BinOpCode(b) ] + cs, es);
+      DeserializeAux(Serialize(a2) + Serialize(a1) + [ BinOpCode(b) ] + cs, es);
       =={
         assert Serialize(a2) + Serialize(a1) + [ BinOpCode(b) ] + cs == Serialize(a2) + (Serialize(a1) + ([ BinOpCode(b) ] + cs)); 
-        DeserializeProperty(a1 , Serialize(a2) + [ BinOpCode(b) ] + cs, es); 
+        DeserializePropertyAux(a2 , Serialize(a1) + [ BinOpCode(b) ] + cs, es); 
       }
-      Deserialize(Serialize(a1) + ([ BinOpCode(b) ] + cs), [a2] + es);
+      DeserializeAux(Serialize(a1) + ([ BinOpCode(b) ] + cs), [a2] + es);
       =={
-        DeserializeProperty(a1 , [ BinOpCode(b) ] + cs, [a2] + es); 
+        DeserializePropertyAux(a2 , [ BinOpCode(b) ] + cs, [a1] + es); 
       }
-      Deserialize([ BinOpCode(b) ] + cs, [a1] + ([a2] + es));
+      DeserializeAux([ BinOpCode(b) ] + cs, [a1] + ([a2] + es));
       =={assert [a1] + ([a2] + es) == ([a1]+[a2]) + es;}
-      Deserialize([ BinOpCode(b) ] + cs, [a1, a2] + es);
+      DeserializeAux([ BinOpCode(b) ] + cs, [a1, a2] + es);
       == 
-      Deserialize(cs, DeserializeCode(BinOpCode(b), [a1, a2] + es));
-      == {assert [a1, a2] + es == [a1] + [a2] + es;}//something missing here HELP
-      Deserialize(cs, [BinOp(b, a1, a2)] + es);
+      DeserializeAux(cs, DeserializeCode(BinOpCode(b), [a1, a2] + es));
       ==
-      Deserialize(cs, [e] + es);
+      DeserializeAux(cs, [BinOp(b, a1, a2)] + es);
+      ==
+      DeserializeAux(cs, [e] + es);
     }
   }
 }
