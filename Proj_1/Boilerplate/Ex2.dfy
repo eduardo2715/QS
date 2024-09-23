@@ -73,7 +73,7 @@ method noRepetitionsLinear(arr: array<nat>) returns (b: bool)
   while (i < arr.Length)
     invariant 0 <= i <= arr.Length  // Loop variable `i` is within bounds
     invariant forall k :: 0 <= k < i ==> 0 <= arr[k] <= max  // All processed values are within bounds of `seen`
-    invariant forall j :: (exists k :: 0 <= k < arr.Length && arr[k] == j) ==> (seen[j] != false <==> exists k2 :: 0 <= k2 < i && arr[k2] == j)
+    invariant forall j :: (exists k :: 0 <= k < arr.Length && arr[k] == j) ==> (seen[j] == true <==> exists k2 :: 0 <= k2 < i && arr[k2] == j)
     invariant forall x, y :: 0 <= x < i && 0 <= y < i && x != y ==> arr[x] != arr[y]  // All elements in `arr` up to `i` are distinct
   {
     var v := arr[i];
