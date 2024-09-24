@@ -47,10 +47,9 @@ module Ex3 {
     method add(v: nat) returns (r: Node)
     requires Valid()
     ensures r.Valid()
-    ensures r.val == v
-    ensures r.next == this
-    ensures r.content == {v} + this.content
-    ensures r.footprint == {r} + this.footprint
+      && r.content == {v} + this.content
+      && r.footprint == {r} + this.footprint
+      && fresh(r)
     {
       r := new Node(v);
       r.next := this;
