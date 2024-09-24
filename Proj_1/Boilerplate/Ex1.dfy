@@ -170,27 +170,35 @@ lemma DeserializeProperty(e : aexpr)
     case UnOp(u, a) => 
     calc{
       Deserialize(Serialize(e));
-      == DeserializeAux(Serialize(UnOp(u, a)), []);
-      == DeserializeAux(Serialize(a) + [UnOpCode(u)], []);
+      == 
+      DeserializeAux(Serialize(UnOp(u, a)), []);
+      == 
+      DeserializeAux(Serialize(a) + [UnOpCode(u)], []);
       == { DeserializePropertyAux(a, [UnOpCode(u)], []); }
       DeserializeAux([UnOpCode(u)], [a]);
-      == DeserializeAux([], [UnOp(u, a)]);
-      == [UnOp(u, a)];
+      == 
+      DeserializeAux([], [UnOp(u, a)]);
+      == 
+      [e];
     }
     case BinOp(b, a1, a2) => 
     calc{
       Deserialize(Serialize(e));
-      == DeserializeAux(Serialize(BinOp(b, a1, a2)), []);
-      == DeserializeAux(Serialize(a2) + Serialize(a1) + [BinOpCode(b)], []);
+      == 
+      DeserializeAux(Serialize(BinOp(b, a1, a2)), []);
+      == 
+      DeserializeAux(Serialize(a2) + Serialize(a1) + [BinOpCode(b)], []);
       == { 
         assert Serialize(a2) + Serialize(a1) + [ BinOpCode(b) ] == Serialize(a2) + (Serialize(a1) + [ BinOpCode(b) ]); 
-        DeserializePropertyAux(a2, Serialize(a1) + [BinOpCode(b)], []); }
+        DeserializePropertyAux(a2, Serialize(a1) + [BinOpCode(b)], []); 
+        }
       DeserializeAux(Serialize(a1) + [BinOpCode(b)], [a2]);
       == { DeserializePropertyAux(a1, [BinOpCode(b)], [a2]); }
       DeserializeAux([BinOpCode(b)], [a1, a2]);
-      == DeserializeAux([], [BinOp(b, a1, a2)]);
-      == [BinOp(b, a1, a2)];
-      
+      == 
+      DeserializeAux([], [BinOp(b, a1, a2)]);
+      ==
+      [e];
     }
   }
 }
@@ -246,7 +254,7 @@ function DeserializeCodes(ints: seq<nat>): seq<code>
 }
 
 
-/* 
+
 /*
   Ex1.4
 */
@@ -255,15 +263,16 @@ lemma DeserializeCodesProperty(cs : seq<code>)
 {
 }
 
+
 /*
   Ex1.5
 */
 function FullSerialize(e : aexpr) : seq<nat> {
- 
+ SerializeCodes(Serialize(e))
 }
 
 function FullDeserealize(nats : seq<nat>) : seq<aexpr> {
- 
+ Deserialize(DeserializeCodes(nats))
 }
 
 /*
@@ -272,5 +281,16 @@ function FullDeserealize(nats : seq<nat>) : seq<aexpr> {
 lemma FullDeserealizeProperty(e : aexpr)
   ensures FullDeserealize(FullSerialize(e)) == [ e ]
 {
+  calc{
+    FullDeserealize(FullSerialize(e));
+    ==
+    FullDeserealize(SerializeCodes(Serialize(e)));
+    ==
+    Deserialize(DeserializeCodes(SerializeCodes(Serialize(e))));
+    == {DeserializeCodesProperty(Serialize(e));}
+    Deserialize(Serialize(e)); 
+    == {DeserializeProperty(e);}
+    [e];
+  }
     
-} */
+}
