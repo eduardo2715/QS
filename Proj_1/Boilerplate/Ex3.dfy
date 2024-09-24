@@ -33,24 +33,61 @@ module Ex3 {
     }
 
     constructor (v : nat) 
+    ensures Valid() 
+      && next == null && content == {val} 
+      && footprint == { this } 
+      && v == val 
     {
+      this.val := v;
+      this.next := null;
+      this.content := {v};
+      this.footprint := {this};
     }
 
-    method add(v : nat) returns (r : Node)
+    method add(v: nat) returns (r: Node)
+    requires Valid()
+    ensures r.Valid()
+    ensures r.val == v
+    ensures r.next == this
+    ensures r.content == {v} + this.content
+    ensures r.footprint == {r} + this.footprint
     {
+      r := new Node(v);
+      r.next := this;
+      r.content := {v} + this.content;
+      r.footprint := {r} + this.footprint;
     }
 
-    method mem(v : nat) returns (b : bool)
+    method mem(v: nat) returns (b: bool)
+    requires Valid()
+    ensures b == (v in this.content)
+    decreases this.footprint
     {
-  
+      if (this.val == v) {
+        b := true;
+      } else if (this.next == null) {
+        b := false;
+      } else {
+        b := this.next.mem(v);  // Recursively check the next node
+      }
     }
+
 
     method copy() returns (n : Node)
+    requires Valid()
+    ensures n.Valid() && Valid()
+    ensures fresh(n.footprint)
+    ensures n.content == this.content 
+    decreases this.footprint 
     {
+      n := new Node(this.val);
+      if (this.next != null) {
+        var aux := this.next.copy(); 
+        n.next := aux; 
+        n.content := { n.val } + aux.content; 
+        n.footprint := { n } + aux.footprint;
+      }
     }
 
-  
   }
-
-  
 }
