@@ -1,8 +1,8 @@
 method noRepetitionsQuadratic(arr : array<nat>) returns (b: bool) 
   requires arr.Length >= 0 
-  ensures b == (forall i, j :: 0 <= i < j < arr.Length ==> arr[i] != arr[j])
-  //ensures b == true ==> forall i, j :: 0 <= i < arr.Length && 0 <= j < arr.Length ==> arr[i] != arr[j]
-  ensures b == false ==> exists i, j :: 0 <= i < arr.Length && 0 <= j < arr.Length && arr[i] == arr[j]
+  //ensures b == (forall i, j :: 0 <= i < j < arr.Length ==> arr[i] != arr[j])
+  ensures b == true <==> forall i, j :: 0 <= i < arr.Length && 0 <= j < arr.Length && i !=j ==> arr[i] != arr[j]
+  //ensures b == false ==> exists i, j :: 0 <= i < arr.Length && 0 <= j < arr.Length && arr[i] == arr[j]
 
  {
   var i := 0; 
@@ -32,7 +32,7 @@ method noRepetitionsQuadratic(arr : array<nat>) returns (b: bool)
 }
 
 
-/* method test()
+method test()
 {
   var arr := new nat[4]; // Create an array of length 4
   arr[0], arr[1], arr[2], arr[3] := 1, 2, 3, 4; // Populate the array
@@ -41,8 +41,10 @@ method noRepetitionsQuadratic(arr : array<nat>) returns (b: bool)
   var arr2 := new nat[4]; // Create an array of length 4
   arr2[0], arr2[1], arr2[2], arr2[3] := 2, 2, 3, 4; // Populate the array
   var b2:=noRepetitionsQuadratic(arr2);
+  assert arr2[0] == arr2[1];
   assert b2 == false;
-} */
+
+}
 
 
 method noRepetitionsLinear(arr: array<nat>) returns (b: bool)
@@ -101,7 +103,7 @@ method noRepetitionsLinear(arr: array<nat>) returns (b: bool)
 }
 
 
-/* method test2()
+method test2()
 {
   var arr := new nat[4]; // Create an array of length 4
   arr[0], arr[1], arr[2], arr[3] := 1, 2, 3, 4; // Populate the array
@@ -110,7 +112,8 @@ method noRepetitionsLinear(arr: array<nat>) returns (b: bool)
   var arr2 := new nat[4]; // Create an array of length 4
   arr2[0], arr2[1], arr2[2], arr2[3] := 2, 2, 3, 4; // Populate the array
   var b2:=noRepetitionsLinear(arr2);
+  assert arr2[0] == arr2[1];
   assert b2 == false;
-} */
+}
 
 

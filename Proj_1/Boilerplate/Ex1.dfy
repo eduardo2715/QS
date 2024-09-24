@@ -137,12 +137,10 @@ lemma DeserializePropertyAux(e : aexpr, cs : seq<code>, es : seq<aexpr>)
 lemma DeserializeProperty(e : aexpr)
   ensures Deserialize(Serialize(e)) == [e]
 {
-  match e{
-    case  Var(a) =>
     calc{
       Deserialize(Serialize(e));
-      ==
-      DeserializeAux(Serialize(e), []);
+      == {assert Serialize(e) + [] == Serialize(e);}
+      DeserializeAux(Serialize(e) + [], []);
       == {DeserializePropertyAux(e, [], []);}
       DeserializeAux([], [e] + []);
       == {DeserializePropertyAux(e, [], []);}
@@ -151,55 +149,6 @@ lemma DeserializeProperty(e : aexpr)
       DeserializeAux([], [e]);
       ==
      [e];
-    }
-
-    case Val(n) => 
-    calc{
-      Deserialize(Serialize(e));
-      ==
-      DeserializeAux(Serialize(e), []);
-      == {DeserializePropertyAux(e, [], []);}
-      DeserializeAux([], [e] + []);
-      == {DeserializePropertyAux(e, [], []);}
-      DeserializeAux(Serialize(e) + [], []);
-      == {DeserializePropertyAux(e, [], []);}
-      DeserializeAux([], [e]);
-      ==
-      [e];
-    }
-    case UnOp(u, a) => 
-    calc{
-      Deserialize(Serialize(e));
-      == 
-      DeserializeAux(Serialize(UnOp(u, a)), []);
-      == 
-      DeserializeAux(Serialize(a) + [UnOpCode(u)], []);
-      == { DeserializePropertyAux(a, [UnOpCode(u)], []); }
-      DeserializeAux([UnOpCode(u)], [a]);
-      == 
-      DeserializeAux([], [UnOp(u, a)]);
-      == 
-      [e];
-    }
-    case BinOp(b, a1, a2) => 
-    calc{
-      Deserialize(Serialize(e));
-      == 
-      DeserializeAux(Serialize(BinOp(b, a1, a2)), []);
-      == 
-      DeserializeAux(Serialize(a2) + Serialize(a1) + [BinOpCode(b)], []);
-      == { 
-        assert Serialize(a2) + Serialize(a1) + [ BinOpCode(b) ] == Serialize(a2) + (Serialize(a1) + [ BinOpCode(b) ]); 
-        DeserializePropertyAux(a2, Serialize(a1) + [BinOpCode(b)], []); 
-        }
-      DeserializeAux(Serialize(a1) + [BinOpCode(b)], [a2]);
-      == { DeserializePropertyAux(a1, [BinOpCode(b)], [a2]); }
-      DeserializeAux([BinOpCode(b)], [a1, a2]);
-      == 
-      DeserializeAux([], [BinOp(b, a1, a2)]);
-      ==
-      [e];
-    }
   }
 }
 
