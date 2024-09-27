@@ -207,15 +207,81 @@ function DeserializeCodes(ints: seq<nat>): seq<code>
 /*
   Ex1.4
 */
-lemma DeserializeCodesProperty(cs : seq<code>)
+lemma DeserializeCodesProperty(cs: seq<code>)
   ensures DeserializeCodes(SerializeCodes(cs)) == cs
 {
-  calc{
-    DeserializeCodes(SerializeCodes(cs));
-    ==
-    
+  if |cs| == 0 {
+    calc {
+      DeserializeCodes(SerializeCodes(cs));
+      == { assert SerializeCodes(cs) == []; }
+      DeserializeCodes([]);
+      == { /* DeserializeCodes returns [] when input is empty */ }
+      [];
+      == { /* cs is empty */ }
+      cs;
+    }
+  } else {
+    // Inductive step: assume the property holds for the tail of the sequence
+    var c := cs[0];
+    var rest := cs[1..];
+
+    // Match on the type of the first element `c`
+    match c {
+      case VarCode(s) =>
+        calc {
+          DeserializeCodes(SerializeCodes(cs));
+          == { assert SerializeCodes(cs) == [0, |s|] + s + SerializeCodes(rest); }
+          DeserializeCodes([0, |s|] + s + SerializeCodes(rest));
+          == { /* DeserializeCodes matches and correctly deserializes VarCode */ }
+          [VarCode(s)] + DeserializeCodes(SerializeCodes(rest));
+          == { /* Inductive hypothesis: DeserializeCodes(SerializeCodes(rest)) == rest */ }
+          [VarCode(s)] + rest;
+          == { /* cs == [VarCode(s)] + rest */ }
+          cs;
+        }
+
+      case ValCode(n) =>
+        calc {
+          DeserializeCodes(SerializeCodes(cs));
+          == { assert SerializeCodes(cs) == [1, n] + SerializeCodes(rest); }
+          DeserializeCodes([1, n] + SerializeCodes(rest));
+          == { /* DeserializeCodes matches and correctly deserializes ValCode */ }
+          [ValCode(n)] + DeserializeCodes(SerializeCodes(rest));
+          == { /* Inductive hypothesis: DeserializeCodes(SerializeCodes(rest)) == rest */ }
+          [ValCode(n)] + rest;
+          == { /* cs == [ValCode(n)] + rest */ }
+          cs;
+        }
+
+      case UnOpCode(u) =>
+        calc {
+          DeserializeCodes(SerializeCodes(cs));
+          == { assert SerializeCodes(cs) == [2, match u { case Neg => 0 }] + SerializeCodes(rest); }
+          DeserializeCodes([2, match u { case Neg => 0 }] + SerializeCodes(rest));
+          == { /* DeserializeCodes matches and correctly deserializes UnOpCode */ }
+          [UnOpCode(u)] + DeserializeCodes(SerializeCodes(rest));
+          == { /* Inductive hypothesis: DeserializeCodes(SerializeCodes(rest)) == rest */ }
+          [UnOpCode(u)] + rest;
+          == { /* cs == [UnOpCode(u)] + rest */ }
+          cs;
+        }
+
+      case BinOpCode(b) =>
+        calc {
+          DeserializeCodes(SerializeCodes(cs));
+          == { assert SerializeCodes(cs) == [3, match b { case Plus => 0 case Minus => 1 }] + SerializeCodes(rest); }
+          DeserializeCodes([3, match b { case Plus => 0 case Minus => 1 }] + SerializeCodes(rest));
+          == { /* DeserializeCodes matches and correctly deserializes BinOpCode */ }
+          [BinOpCode(b)] + DeserializeCodes(SerializeCodes(rest));
+          == { /* Inductive hypothesis: DeserializeCodes(SerializeCodes(rest)) == rest */ }
+          [BinOpCode(b)] + rest;
+          == { /* cs == [BinOpCode(b)] + rest */ }
+          cs;
+        }
+    }
   }
 }
+
 
 
 /*
