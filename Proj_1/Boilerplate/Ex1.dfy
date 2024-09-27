@@ -210,6 +210,11 @@ function DeserializeCodes(ints: seq<nat>): seq<code>
 lemma DeserializeCodesProperty(cs : seq<code>)
   ensures DeserializeCodes(SerializeCodes(cs)) == cs
 {
+  calc{
+    DeserializeCodes(SerializeCodes(cs));
+    ==
+    
+  }
 }
 
 
