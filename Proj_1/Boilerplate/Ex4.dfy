@@ -75,52 +75,51 @@ module Ex4 {
 
 
 
-method union(s: Set) returns (r: Set)
-  requires Valid() && s.Valid()  // Both sets must be valid before performing the union
-  ensures r.Valid()  // The resulting set must be valid
-  ensures r.content == this.content + s.content  // The content of the result should be the union of both sets' contents
-{
-    r := new Set();  // Start with an empty set
 
-    // Add elements from the current set (this) to r
-    var current := this.list;
-
-    ghost var remaining := this.content;  // Tracks the elements that are yet to be processed
-    while current != null
-      invariant current == null || current.Valid()  // current should either be null or a valid node
-      invariant r.Valid()  // r should remain valid during the loop
-      invariant r.content == this.content - remaining  // r.content is exactly what has been processed from this set
-      invariant current == null || current.val in remaining  // Every node's value must be in the remaining set
-      invariant remaining <= this.content  // Remaining is always a subset of this.content
-      decreases |remaining|  // The size of the remaining set decreases
+    method union(s: Set) returns (r: Set)
+      requires Valid() && s.Valid()
+      ensures r.Valid()
+      ensures r.content == this.content + s.content
     {
-      // Check if the current value is already in r's content
-      var inside := r.mem(current.val);
-      if (!inside) {
-        r.add(current.val);  // Add only if it's not already in r
-      }
+        r := new Set();
 
-      // Update remaining set and move to the next node
-      remaining := remaining - {current.val};
-      current := current.next;  // Move to the next node
+        // First, add elements from `this` to `r`
+        var current := this.list;
+
+        while current != null
+          invariant r.Valid()
+          invariant r.content <= this.content
+          invariant current == null || current.val in this.content
+          decreases current
+        {
+          // Check if the current value is already in `r`
+          var inside := r.mem(current.val);
+          if (!inside) {
+            r.add(current.val);
+          }
+          current := current.next;
+        }
+
+        // Now, add elements from `s` to `r`
+        var other := s.list;
+
+        while other != null
+          invariant r.Valid()  // `r` should remain valid
+          invariant r.content <= this.content + s.content
+          invariant other == null || other.val in s.content
+          decreases other
+        {
+          
+          var inside := r.mem(other.val);
+          if (!inside) {
+            r.add(other.val);
+          }
+          other := other.next;
+        }
     }
 
-    // Add elements from the input set s to r
-    var other := s.list;
-    while other != null
-      invariant other == null || other.Valid()  // other should either be null or a valid node
-      invariant r.Valid()  // r should remain valid during the loop
-      invariant r.content <= this.content + s.content  // r's content should grow to include elements from both sets
-      decreases other
-    {
-      // Check if the value is already in r's content before adding
-      var inside := r.mem(other.val);
-      if (!inside) {
-        r.add(other.val);  // Add the current node's value to r only if it isn't already present
-      }
-      other := other.next;  // Move to the next node
-    }
-}
+
+
 
 
 
