@@ -85,37 +85,42 @@ module Ex4 {
 
         // First, add elements from `this` to `r`
         var current := this.list;
-
+        ghost var seen :set<int> := {};
         while current != null
           invariant r.Valid()
-          invariant r.content <= this.content
-          invariant current == null || current.val in this.content
-          decreases current
+          invariant current != null ==> current.Valid()
+          invariant current != null ==> this.content == seen + current.content
+          invariant current == null ==> this.content == seen
+          decreases if (current != null) then current.footprint else {}
         {
           // Check if the current value is already in `r`
           var inside := r.mem(current.val);
           if (!inside) {
             r.add(current.val);
           }
+
+          seen := seen + {current.val};
           current := current.next;
         }
 
         // Now, add elements from `s` to `r`
         var other := s.list;
+ghost var seenThis: set<nat> := this.content;  // Already seen from this
+ghost var seenOther: set<nat> := {};           // Will track seen from s
+while other != null
+  invariant r.Valid()
+  invariant other != null ==> other.Valid()
+  invariant s.content == seenOther + (if other != null then other.content else {})
+  decreases if(other != null) then other.footprint else {}
+{
+  var inside := r.mem(other.val);
+  if (!inside) {
+    r.add(other.val);
+  }
+  seenOther := seenOther + {other.val};
+  other := other.next;
+}
 
-        while other != null
-          invariant r.Valid()  // `r` should remain valid
-          invariant r.content <= this.content + s.content
-          invariant other == null || other.val in s.content
-          decreases other
-        {
-          
-          var inside := r.mem(other.val);
-          if (!inside) {
-            r.add(other.val);
-          }
-          other := other.next;
-        }
     }
 
 
