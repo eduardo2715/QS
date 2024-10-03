@@ -128,9 +128,6 @@ module Ex4 {
 
 
 
-
-
-
     method inter(s: Set) returns (r: Set)
       requires Valid() && s.Valid()
       ensures r.Valid()
@@ -160,9 +157,7 @@ module Ex4 {
         current := current.next;  // Move to the next node
       }
     }
-
     
   }
-
 }
 
