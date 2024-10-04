@@ -49,7 +49,7 @@ module Ex4 {
     method add(v: nat)
       requires Valid()
       ensures Valid()
-      ensures v in this.content  // Ensure the set contains v after the method
+      ensures this.content == old(this.content) + {v}
       modifies this
     {
       if this.list == null {
@@ -73,9 +73,6 @@ module Ex4 {
 
 
 
-
-
-
     method union(s: Set) returns (r: Set)
       requires Valid() && s.Valid()
       ensures r.Valid()
@@ -91,6 +88,7 @@ module Ex4 {
           invariant current != null ==> current.Valid()
           invariant current != null ==> this.content == seen + current.content
           invariant current == null ==> this.content == seen
+          invariant r.content == seen
           decreases if (current != null) then current.footprint else {}
         {
           // Check if the current value is already in `r`
@@ -102,27 +100,31 @@ module Ex4 {
           seen := seen + {current.val};
           current := current.next;
         }
+        assert this.content == seen;
 
         // Now, add elements from `s` to `r`
         var other := s.list;
 
         ghost var seen2 :set<int> := {};
-        while current != null
+        while other != null
           invariant r.Valid()
           invariant other != null ==> other.Valid()
           invariant other != null ==> s.content == seen2 + other.content
           invariant other == null ==> s.content == seen2
+          invariant r.content == this.content + seen2
           decreases if (other != null) then other.footprint else {}
         {
           // Check if the current value is already in `r`
-          var inside := r.mem(current.val);
+          var inside := r.mem(other.val);
           if (!inside) {
-            r.add(current.val);
+            r.add(other.val);
           }
 
-          seen := seen + {current.val};
+          seen2 := seen2 + {other.val};
           other := other.next;
         }
+
+        //assert r.content == seen + seen2;
 
     }
 
@@ -157,7 +159,7 @@ module Ex4 {
         current := current.next;  // Move to the next node
       }
     }
-    
+
   }
 }
 
