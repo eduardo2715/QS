@@ -142,10 +142,11 @@ module Ex4 {
 
       // Loop through each element in 'this'
       while current != null
+        invariant this.Valid()
         invariant r.Valid()
         invariant current != null ==> current.Valid()
         invariant this.content == seen + (if current != null then current.content else {})
-        //invariant r.content == seen * s.content  // Ensure that r.content is the intersection
+        invariant r.content == seen * s.content  // Ensure that r.content is the intersection
         decreases if (current != null) then current.footprint else {}
       {
         var inOther := s.mem(current.val);  // Check if current element is in set 's'
