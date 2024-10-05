@@ -98,22 +98,30 @@ module Ex1 {
 
         method RemoveKey(k:int) returns (r:KVNode?)
         requires Valid()
-        ensures r!=null ==> Valid() && r.footprint <= old(this.footprint)
+        ensures r!=null ==> Valid() 
+        ensures r!=null ==> r.footprint <= old(this.footprint)
+        ensures r!=null ==> this.kv_map.Keys == old(this.kv_map.Keys) - {k}
+        ensures r == null ==>  old(this.kv_map.Keys) == {k}
 
-
+        modifies footprint
         decreases footprint
         {
             if (k==this.key){
                 r:=this.next;return;
             }else{
-                var aux:=this.next.RemoveKey(k);
-                this.next := aux;
-                if (aux == null){
-                    this.footprint := {this};
-                    this.kv_map := map[this.key:=this.data];
+                if (this.next == null){
+                    r:=this; return;
                 }else{
-                    this.footprint := {this} + aux.footprint;
-                    this.kv_map := kv_map[this.key:=this.data];
+                    var aux:=this.next.RemoveKey(k);
+                    this.next := aux;
+                    if(this.next != null){
+                    this.footprint := {this} + this.next.footprint;
+                    this.kv_map := this.next.kv_map[this.key:=this.data];
+                    }else{
+                        this.footprint := {this};
+                        this.kv_map := kv_map[this.key:=this.data];
+                    }
+                    r:=this; return;
                 }
             }
         }

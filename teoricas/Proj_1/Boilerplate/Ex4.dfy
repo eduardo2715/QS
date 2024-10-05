@@ -50,8 +50,8 @@ module Ex4 {
       requires Valid()
       ensures Valid()
       ensures this.content == old(this.content) + {v}
-      modifies this
-    {
+      modifies if(this.list == null) then (this.footprint) else {} //this
+      {
       if this.list == null {
         // The set is empty, so create the first node
         this.list := new Ex3.Node(v);
@@ -123,8 +123,6 @@ module Ex4 {
           seen2 := seen2 + {other.val};
           other := other.next;
         }
-
-        //assert r.content == seen + seen2;
 
     }
 
