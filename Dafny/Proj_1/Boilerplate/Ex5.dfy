@@ -149,8 +149,6 @@ module Ex5 {
     {
         var max := maxUnionHelper(s.tbl,this.tbl);
         r := new Set(max);  
-        assert r.tbl.Length == max + 1;
-
     
         assert this.Valid();
         assert s.Valid();
@@ -159,14 +157,14 @@ module Ex5 {
         var current := this.list;
         while current != null
           invariant r.Valid()
-          invariant this.tbl.Length <= r.tbl.Length
-          invariant s.tbl.Length <= r.tbl.Length
-          invariant current != null ==> forall i:: i in current.content ==> i < r.tbl.Length
+          invariant this.tbl.Length >= r.tbl.Length
+          invariant s.tbl.Length >= r.tbl.Length
+          invariant forall i:: i in r.content ==> i < r.tbl.Length
           invariant current != null ==> current.Valid()
           invariant current != null ==> this.content == seen + current.content
           invariant current == null ==> this.content == seen
           invariant r.content == seen * s.content 
-          invariant current != null ==> r.tbl[current.val] == (current.val in r.content)
+          invariant current != null ==> r.tbl[current.val] == (current.val in seen)
           decreases if (current != null) then current.footprint else {}
         {
             if current.val < r.tbl.Length && s.tbl[current.val] && !r.tbl[current.val] {
