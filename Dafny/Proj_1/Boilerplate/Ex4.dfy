@@ -50,7 +50,8 @@ module Ex4 {
       requires Valid()
       ensures Valid()
       ensures this.content == old(this.content) + {v}
-      modifies if(this.list == null) then (this.footprint) else {} //this
+      // modifies if(this.list == null) then (this.footprint) else {} //this
+      modifies this
       {
       if this.list == null {
         // The set is empty, so create the first node
