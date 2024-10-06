@@ -153,16 +153,58 @@ module Ex5 {
     }
 
 
-
-
-    method inter(s : Set) returns (r : Set)
+    method inter(s: Set) returns (r: Set)
+        requires Valid()
+        requires s.Valid()
+        ensures r.Valid()
+        ensures r.content == this.content * s.content  // Intersection of the two sets
     {
+        var max; // Intersect needs to accommodate both sets
+        if this.tbl.Length >= s.tbl.Length {
+          max := this.tbl.Length;
+        } else {
+          max := s.tbl.Length;
+        }
+        r := new Set(max);  // Result set initialized to the larger size
+        assert r.tbl.Length == max + 1;
+
+        // Reassert `Valid()` to make sure Dafny keeps track of this invariant
+        assert this.Valid();
+        assert s.Valid();
+
+        // Iterate through elements from `this` and add to `r` if they are also in `s`
+        ghost var seen : set<int> := {};  // Keep track of processed elements
+        var current := this.list;
+        while current != null
+          invariant r.Valid()
+          invariant this.tbl.Length <= r.tbl.Length
+          invariant current != null ==> forall i :: i in current.content ==> i < r.tbl.Length
+          invariant current != null ==> current.Valid()
+          invariant current != null ==> this.content == seen + current.content
+          invariant current == null ==> this.content == seen
+          invariant r.content == seen * s.content  // Only add elements that are in both sets
+          invariant current != null ==> r.tbl[current.val] == (current.val in r.content)
+          decreases if (current != null) then current.footprint else {}
+        {
+            // Check if the current value is within the bounds of `r`'s table
+            // and is also present in the second set `s`
+            if current.val < r.tbl.Length && s.tbl[current.val] && !r.tbl[current.val] {
+                r.add(current.val);  // Add the value to the result set if it's in both sets
+            }
+            seen := seen + {current.val};  // Mark the value as seen
+            current := current.next;  // Move to the next node
+        }
+
+        // After the loop, `r` should have the intersection of both sets
+        assert r.content == this.content * s.content;
+        assert r.Valid();  // Ensure the result set is valid
     }
+
 
   }
 
   function max(a:int,b:int):int{
-        if a >= b
+    if a >= b
     then a
     else b
   }
