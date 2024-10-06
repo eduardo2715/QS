@@ -14,8 +14,6 @@ module Ex5 {
     ghost function Valid() : bool
       reads this, footprint, this.list, this.tbl
     {
-      // Invariant: If the list is non-null, it must be a valid Node list
-      // The footprint of the set should match the list's footprint
       if (list == null)
       then
         footprint == {}
@@ -43,7 +41,7 @@ module Ex5 {
       ensures forall i :: i in this.content ==> i < size
       ensures tbl.Length == size + 1
     {
-      tbl := new bool[size + 1] (_=>false);  // Initialize array with all false
+      tbl := new bool[size + 1] (_=>false);  
       list := null;
       footprint := {};
       content := {};
@@ -51,13 +49,11 @@ module Ex5 {
 
 
     method mem(v: nat) returns (b: bool)
-      requires v < tbl.Length  // Ensure the value is within the bounds of the array
+      requires v < tbl.Length  
       requires Valid()
       ensures Valid()
       ensures b == (v in content)
-    {
-      // Check constant-time membership from the array
-      b := tbl[v];
+    {      b := tbl[v];
       assert b == (v in content);
     }
 
@@ -70,18 +66,15 @@ module Ex5 {
       modifies tbl, this
     {
       if (!tbl[v]) {
-        // Update the membership array
         tbl[v] := true;
 
-        // Add the element to the linked list
         if (list == null) {
           list := new Ex3.Node(v);
         } else {
-          var newNode := list.add(v);  // Add to the front of the list
+          var newNode := list.add(v);  
           list := newNode;
         }
 
-        // Update ghost fields
         content := content + {v};
         footprint := if list == null then {} else list.footprint;
       }
@@ -91,22 +84,20 @@ module Ex5 {
         requires Valid()
         requires s.Valid()
         ensures r.Valid()
-        ensures r.content == s.content + this.content  // Union of the two sets
+        ensures r.content == s.content + this.content  
     {
-        var max; // Union needs to accommodate both sets
+        var max;
         if this.tbl.Length >= s.tbl.Length {
           max := this.tbl.Length;
         }else{ max := s.tbl.Length;
         }
-        r := new Set(max);  // Result set initialized to the larger size
+        r := new Set(max); 
         assert r.tbl.Length == max + 1;
-        // Reassert `Valid()` to make sure Dafny keeps track of this invariant
         assert this.Valid();
         assert s.Valid();
 
 
-        // First, add elements from `this` to `r`
-        ghost var seen : set<int> := {};  // Keep track of processed elements
+        ghost var seen : set<int> := {}; 
         var current := this.list;
         while current != null
           invariant r.Valid()
@@ -119,15 +110,13 @@ module Ex5 {
           invariant current != null ==> r.tbl[current.val] == (current.val in r.content)
           decreases if (current != null) then current.footprint else {}
         {
-            // Check if the current value is within the bounds of `r`'s table
             if current.val < r.tbl.Length && !r.tbl[current.val] {
-                r.add(current.val);  // Add the value to the result set
+                r.add(current.val); 
             }
-            seen := seen + {current.val};  // Mark the value as seen
-            current := current.next;  // Move to the next node
+            seen := seen + {current.val}; 
+            current := current.next; 
         }
 
-        // Now, add elements from `s` to `r`
         var other := s.list;
         ghost var seen2 : set<int> := {};
         while other != null
@@ -139,17 +128,16 @@ module Ex5 {
           invariant other != null ==> r.tbl[other.val] == (other.val in r.content)
           decreases if (other != null) then other.footprint else {}
         {
-            // Check if the current value is within the bounds of `r`'s table
             if other.val < r.tbl.Length && !r.tbl[other.val] {
-                r.add(other.val);  // Add the value to the result set
+                r.add(other.val);  
             }
-            seen2 := seen2 + {other.val};  // Mark the value as seen
-            other := other.next;  // Move to the next node
+            seen2 := seen2 + {other.val};  
+            other := other.next;  
         }
 
-        // After both loops, `r` should have the union of both sets
+
         assert r.content == this.content + s.content;
-        assert r.Valid();  // Ensure the result set is valid
+        assert r.Valid(); 
     }
 
 
@@ -157,47 +145,44 @@ module Ex5 {
         requires Valid()
         requires s.Valid()
         ensures r.Valid()
-        ensures r.content == this.content * s.content  // Intersection of the two sets
+        ensures r.content == this.content * s.content 
     {
-        var max; // Intersect needs to accommodate both sets
+        var max; 
         if this.tbl.Length >= s.tbl.Length {
           max := this.tbl.Length;
         } else {
           max := s.tbl.Length;
         }
-        r := new Set(max);  // Result set initialized to the larger size
+        r := new Set(max);  
         assert r.tbl.Length == max + 1;
 
-        // Reassert `Valid()` to make sure Dafny keeps track of this invariant
+    
         assert this.Valid();
         assert s.Valid();
-
-        // Iterate through elements from `this` and add to `r` if they are also in `s`
-        ghost var seen : set<int> := {};  // Keep track of processed elements
+    
+        ghost var seen : set<int> := {}; 
         var current := this.list;
         while current != null
           invariant r.Valid()
           invariant this.tbl.Length <= r.tbl.Length
+          invariant s.tbl.Length <= r.tbl.Length
           invariant current != null ==> forall i :: i in current.content ==> i < r.tbl.Length
           invariant current != null ==> current.Valid()
           invariant current != null ==> this.content == seen + current.content
           invariant current == null ==> this.content == seen
-          invariant r.content == seen * s.content  // Only add elements that are in both sets
+          invariant r.content == seen * s.content 
           invariant current != null ==> r.tbl[current.val] == (current.val in r.content)
           decreases if (current != null) then current.footprint else {}
         {
-            // Check if the current value is within the bounds of `r`'s table
-            // and is also present in the second set `s`
             if current.val < r.tbl.Length && s.tbl[current.val] && !r.tbl[current.val] {
-                r.add(current.val);  // Add the value to the result set if it's in both sets
+                r.add(current.val);
             }
-            seen := seen + {current.val};  // Mark the value as seen
-            current := current.next;  // Move to the next node
+            seen := seen + {current.val}; 
+            current := current.next; 
         }
 
-        // After the loop, `r` should have the intersection of both sets
         assert r.content == this.content * s.content;
-        assert r.Valid();  // Ensure the result set is valid
+        assert r.Valid();  
     }
 
 

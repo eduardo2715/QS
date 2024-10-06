@@ -67,7 +67,7 @@ module Ex3 {
       } else if (this.next == null) {
         b := false;
       } else {
-        b := this.next.mem(v);  // Recursively check the next node
+        b := this.next.mem(v);
       }
     }
 

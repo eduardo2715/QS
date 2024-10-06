@@ -41,7 +41,7 @@ module Ex4 {
       if this.list == null {
         b := false;
       } else {
-        b := this.list.mem(v);  // Reuse the 'mem' method from the Node class
+        b := this.list.mem(v);
       }
     }
 
@@ -50,22 +50,18 @@ module Ex4 {
       requires Valid()
       ensures Valid()
       ensures this.content == old(this.content) + {v}
-      // modifies if(this.list == null) then (this.footprint) else {} //this
       modifies this
       {
       if this.list == null {
-        // The set is empty, so create the first node
         this.list := new Ex3.Node(v);
         this.content := {v};
         this.footprint := {this.list};
       } else {
-        // Use the `add` method from Node to add the value `v`
         var inside := this.mem(v);
         if !inside{
           var newNode := this.list.add(v);
           this.list := newNode;
           
-          // Update ghost fields
           this.content := this.content + {v};
           this.footprint := newNode.footprint;
         }
@@ -80,8 +76,6 @@ module Ex4 {
       ensures r.content == this.content + s.content
     {
         r := new Set();
-
-        // First, add elements from `this` to `r`
         var current := this.list;
         ghost var seen :set<int> := {};
         while current != null
@@ -92,7 +86,6 @@ module Ex4 {
           invariant r.content == seen
           decreases if (current != null) then current.footprint else {}
         {
-          // Check if the current value is already in `r`
           var inside := r.mem(current.val);
           if (!inside) {
             r.add(current.val);
@@ -103,7 +96,6 @@ module Ex4 {
         }
         assert this.content == seen;
 
-        // Now, add elements from `s` to `r`
         var other := s.list;
 
         ghost var seen2 :set<int> := {};
@@ -115,7 +107,6 @@ module Ex4 {
           invariant r.content == this.content + seen2
           decreases if (other != null) then other.footprint else {}
         {
-          // Check if the current value is already in `r`
           var inside := r.mem(other.val);
           if (!inside) {
             r.add(other.val);
@@ -132,31 +123,29 @@ module Ex4 {
     method inter(s: Set) returns (r: Set)
       requires Valid() && s.Valid()
       ensures r.Valid()
-      ensures r.content == this.content * s.content  // Intersection of this and s
+      ensures r.content == this.content * s.content  
     {
-      r := new Set();  // Create a new set for the intersection result
+      r := new Set();  
 
-      var current := this.list;  // Start with the elements in 'this' set
-      ghost var seen : set<nat> := {};  // Tracks elements we've processed from 'this'
+      var current := this.list;  
+      ghost var seen : set<nat> := {};  
 
-      // Loop through each element in 'this'
       while current != null
         invariant this.Valid()
         invariant r.Valid()
         invariant current != null ==> current.Valid()
         invariant this.content == seen + (if current != null then current.content else {})
-        invariant r.content == seen * s.content  // Ensure that r.content is the intersection
+        invariant r.content == seen * s.content  
         decreases if (current != null) then current.footprint else {}
       {
-        var inOther := s.mem(current.val);  // Check if current element is in set 's'
+        var inOther := s.mem(current.val);  
         if inOther {  
-          r.add(current.val);  // Add to result if it is present in both sets
+          r.add(current.val);  
 
-          // Update ghost fields explicitly
-          r.content := r.content + {current.val};  // Track the added element
+          r.content := r.content + {current.val};
         }
-        seen := seen + {current.val};  // Mark the current element as seen
-        current := current.next;  // Move to the next node
+        seen := seen + {current.val};
+        current := current.next;  
       }
     }
 
