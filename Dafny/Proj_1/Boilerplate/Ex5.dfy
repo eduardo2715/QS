@@ -147,12 +147,7 @@ module Ex5 {
         ensures r.Valid()
         ensures r.content == this.content * s.content 
     {
-        var max; 
-        if this.tbl.Length >= s.tbl.Length {
-          max := this.tbl.Length;
-        } else {
-          max := s.tbl.Length;
-        }
+        var max := maxUnionHelper(s.tbl,this.tbl);
         r := new Set(max);  
         assert r.tbl.Length == max + 1;
 
@@ -194,18 +189,25 @@ module Ex5 {
     else b
   }
 
-function maxUnion(s: array<bool>, t: array<bool>, i: int) : int
-  requires 0 <= i <= max(s.Length, t.Length)  // Ensure valid index
+function maxUnion(s: array<bool>, t: array<bool>, i: int) : nat
+  requires 0 <= i <= max(s.Length, t.Length)  
   decreases max(s.Length, t.Length) - i
   reads s, t
 {
   if i == max(s.Length, t.Length) then
-    -1  // Base case: no match found, return -1
+    0
   else if i < s.Length && i < t.Length && s[i] && t[i] then
-    var nextMax := maxUnion(s, t, i + 1);  // Recursively check the next index
-    if nextMax == -1 then i else nextMax  // If no larger match, return current index
+    var nextMax := maxUnion(s, t, i + 1);  
+    if nextMax == -1 then i else nextMax  
   else
-    maxUnion(s, t, i + 1)  // Continue searching if no match at current index
+    maxUnion(s, t, i + 1)  
 }
+function maxUnionHelper(s: array<bool>, t: array<bool>): nat
+  requires s != null && t != null
+  reads s,t 
+{
+  maxUnion(s, t, 0)
+}
+
 
 }
