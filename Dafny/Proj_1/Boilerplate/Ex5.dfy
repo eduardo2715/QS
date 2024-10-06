@@ -41,9 +41,9 @@ module Ex5 {
       ensures Valid() && this.content == {} && this.footprint == {}
       ensures forall i :: 0 <= i < tbl.Length ==> tbl[i] == false
       ensures forall i :: i in this.content ==> i < size
-      ensures tbl.Length == size
+      ensures tbl.Length == size + 1
     {
-      tbl := new bool[size] (_=>false);  // Initialize array with all false
+      tbl := new bool[size + 1] (_=>false);  // Initialize array with all false
       list := null;
       footprint := {};
       content := {};
@@ -93,16 +93,17 @@ module Ex5 {
         ensures r.Valid()
         ensures r.content == s.content + this.content  // Union of the two sets
     {
-        var max := max(s.tbl.Length, this.tbl.Length);  // Union needs to accommodate both sets
+        var max; // Union needs to accommodate both sets
+        if this.tbl.Length >= s.tbl.Length {
+          max := this.tbl.Length;
+        }else{ max := s.tbl.Length;
+        }
         r := new Set(max);  // Result set initialized to the larger size
-
+        assert r.tbl.Length == max + 1;
         // Reassert `Valid()` to make sure Dafny keeps track of this invariant
         assert this.Valid();
         assert s.Valid();
 
-        // Assert that `this.content` and `s.content` are within their respective `tbl` bounds
-        assert forall i :: i in this.content ==> i < this.tbl.Length;
-        assert forall i :: i in s.content ==> i < s.tbl.Length;
 
         // First, add elements from `this` to `r`
         ghost var seen : set<int> := {};  // Keep track of processed elements
@@ -110,7 +111,7 @@ module Ex5 {
         while current != null
           invariant r.Valid()
           invariant this.tbl.Length <= r.tbl.Length
-          invariant current != null ==> forall i :: i in current.content ==> i < max
+          invariant current != null ==> forall i :: i in current.content ==> i <  r.tbl.Length 
           invariant current != null ==> current.Valid()
           invariant current != null ==> this.content == seen + current.content
           invariant current == null ==> this.content == seen
@@ -161,7 +162,7 @@ module Ex5 {
   }
 
   function max(a:int,b:int):int{
-    if a >= b
+        if a >= b
     then a
     else b
   }
