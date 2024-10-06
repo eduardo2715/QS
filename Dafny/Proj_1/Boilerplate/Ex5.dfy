@@ -166,7 +166,7 @@ module Ex5 {
           invariant r.Valid()
           invariant this.tbl.Length <= r.tbl.Length
           invariant s.tbl.Length <= r.tbl.Length
-          invariant current != null ==> forall i :: i in current.content ==> i < r.tbl.Length
+          invariant current != null ==> forall i:: i in current.content ==> i < r.tbl.Length
           invariant current != null ==> current.Valid()
           invariant current != null ==> this.content == seen + current.content
           invariant current == null ==> this.content == seen
@@ -193,4 +193,21 @@ module Ex5 {
     then a
     else b
   }
+
+function maxUnion(s: array<bool>, t: array<bool>):int
+{
+  var max := max(s.Length, t.Length);
+  var i := 0;
+  var temp := -1;  // Initialize to -1 as default if no match is found
+
+  // Loop to find the maximum index where both arrays have true values
+  while i < max
+
+  {
+    if i < s.Length && i < t.Length && s[i] && t[i] {
+      temp := i;
+    }
+    i := i + 1;
+  }
+}
 }
