@@ -194,20 +194,18 @@ module Ex5 {
     else b
   }
 
-function maxUnion(s: array<bool>, t: array<bool>):int
+function maxUnion(s: array<bool>, t: array<bool>, i: int) : int
+  requires 0 <= i <= max(s.Length, t.Length)  // Ensure valid index
+  decreases max(s.Length, t.Length) - i
+  reads s, t
 {
-  var max := max(s.Length, t.Length);
-  var i := 0;
-  var temp := -1;  // Initialize to -1 as default if no match is found
-
-  // Loop to find the maximum index where both arrays have true values
-  while i < max
-
-  {
-    if i < s.Length && i < t.Length && s[i] && t[i] {
-      temp := i;
-    }
-    i := i + 1;
-  }
+  if i == max(s.Length, t.Length) then
+    -1  // Base case: no match found, return -1
+  else if i < s.Length && i < t.Length && s[i] && t[i] then
+    var nextMax := maxUnion(s, t, i + 1);  // Recursively check the next index
+    if nextMax == -1 then i else nextMax  // If no larger match, return current index
+  else
+    maxUnion(s, t, i + 1)  // Continue searching if no match at current index
 }
+
 }
