@@ -31,12 +31,17 @@ module Ex5 {
         list.Valid()
         &&
         forall i :: 0 <= i < tbl.Length ==> tbl[i] == (i in content)
+        &&
+        forall i :: i in this.content ==> i < tbl.Length
+
     }
 
     constructor (size : nat)
       ensures Valid()
       ensures Valid() && this.content == {} && this.footprint == {}
       ensures forall i :: 0 <= i < tbl.Length ==> tbl[i] == false
+      ensures forall i :: i in this.content ==> i < size
+      ensures tbl.Length == size
     {
       tbl := new bool[size] (_=>false);  // Initialize array with all false
       list := null;
@@ -82,63 +87,72 @@ module Ex5 {
       }
     }
 
-    method union(s : Set) returns (r : Set)
-      requires Valid()
-      requires s.Valid()
-      ensures r.Valid()
-      ensures r.content == s.content + this.content
+      method union(s : Set) returns (r : Set)
+        requires Valid()
+        requires s.Valid()
+        ensures r.Valid()
+        ensures r.content == s.content + this.content  // Union of the two sets
     {
-      var max := max(s.tbl.Length, this.tbl.Length);
-      r := new Set(max);
+        var max := max(s.tbl.Length, this.tbl.Length);  // Union needs to accommodate both sets
+        r := new Set(max);  // Result set initialized to the larger size
 
-      ghost var seen :set<int> := {};
-      var current := this.list;
-      while current != null
-        invariant r.Valid()
-        invariant current != null ==> current.Valid()
-        invariant current != null ==> this.content == seen + current.content
-        invariant current == null ==> this.content == seen
-        invariant r.content == seen
-        invariant tbl[current.val] == true <==> current.val in this.content 
-        decreases if (current != null) then current.footprint else {}
-      {
+        // Reassert `Valid()` to make sure Dafny keeps track of this invariant
+        assert this.Valid();
+        assert s.Valid();
 
-        //   invariant if(current != null) then current.val < tbl.Length else
-         
-        // {
-        // Check if the current value is already in `r`
-        if (!tbl[current.val]) {
-          r.add(current.val);
+        // Assert that `this.content` and `s.content` are within their respective `tbl` bounds
+        assert forall i :: i in this.content ==> i < this.tbl.Length;
+        assert forall i :: i in s.content ==> i < s.tbl.Length;
+
+        // First, add elements from `this` to `r`
+        ghost var seen : set<int> := {};  // Keep track of processed elements
+        var current := this.list;
+        while current != null
+          invariant r.Valid()
+          invariant this.tbl.Length <= r.tbl.Length
+          invariant current != null ==> forall i :: i in current.content ==> i < max
+          invariant current != null ==> current.Valid()
+          invariant current != null ==> this.content == seen + current.content
+          invariant current == null ==> this.content == seen
+          invariant r.content == seen
+          invariant current != null ==> r.tbl[current.val] == (current.val in r.content)
+          decreases if (current != null) then current.footprint else {}
+        {
+            // Check if the current value is within the bounds of `r`'s table
+            if current.val < r.tbl.Length && !r.tbl[current.val] {
+                r.add(current.val);  // Add the value to the result set
+            }
+            seen := seen + {current.val};  // Mark the value as seen
+            current := current.next;  // Move to the next node
         }
 
-        seen := seen + {current.val};
-        current := current.next;
-      }
-
-
-      var other := s.list;
-      ghost var seen2 :set<int> := {};
-      while other != null
-        invariant r.Valid()
-        invariant other != null ==> other.Valid()
-        invariant other != null ==> s.content == seen2 + other.content
-        invariant other == null ==> s.content == seen2
-        invariant r.content == this.content + seen2
-        decreases if (other != null) then other.footprint else {}
-      {
-        // Check if the current value is already in `r`
-
-        if (!tbl[current.val]) {
-          r.add(current.val);
+        // Now, add elements from `s` to `r`
+        var other := s.list;
+        ghost var seen2 : set<int> := {};
+        while other != null
+          invariant r.Valid()
+          invariant other != null ==> other.Valid()
+          invariant other != null ==> s.content == seen2 + other.content
+          invariant other == null ==> s.content == seen2
+          invariant r.content == this.content + seen2
+          invariant other != null ==> r.tbl[other.val] == (other.val in r.content)
+          decreases if (other != null) then other.footprint else {}
+        {
+            // Check if the current value is within the bounds of `r`'s table
+            if other.val < r.tbl.Length && !r.tbl[other.val] {
+                r.add(other.val);  // Add the value to the result set
+            }
+            seen2 := seen2 + {other.val};  // Mark the value as seen
+            other := other.next;  // Move to the next node
         }
 
-        seen2 := seen2 + {other.val};
-        other := other.next;
-      }
-
-
-
+        // After both loops, `r` should have the union of both sets
+        assert r.content == this.content + s.content;
+        assert r.Valid();  // Ensure the result set is valid
     }
+
+
+
 
     method inter(s : Set) returns (r : Set)
     {
