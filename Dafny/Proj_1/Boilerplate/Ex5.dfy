@@ -82,104 +82,102 @@ module Ex5 {
       }
     }
 
-      method union(s : Set) returns (r : Set)
-        requires Valid()
-        requires s.Valid()
-        ensures r.Valid()
-        ensures r.content == s.content + this.content
+    method union(s : Set) returns (r : Set)
+      requires Valid()
+      requires s.Valid()
+      ensures r.Valid()
+      ensures r.content == s.content + this.content
  
     {
-        var max := max(this.tbl.Length,s.tbl.Length);
-        r := new Set(max); 
-        assert r.tbl.Length == max + 1;
-        assert this.Valid();
-        assert s.Valid(); 
-        assert fresh(r.tbl);
+      var max := max(this.tbl.Length,s.tbl.Length);
+      r := new Set(max); 
+      assert r.tbl.Length == max + 1;
+      assert this.Valid();
+      assert s.Valid(); 
+      assert fresh(r.tbl);
 
-        ghost var seen : set<int> := {}; 
-        var current := this.list;
-        while current != null
-          invariant r.Valid()
-          invariant this.tbl.Length <= r.tbl.Length
-          invariant s.tbl.Length <= r.tbl.Length
-          invariant fresh(r.tbl)
-          invariant current != null ==> forall i :: i in current.content ==> i <  r.tbl.Length 
-          invariant current != null ==> current.Valid()
-          invariant current != null ==> this.content == seen + current.content
-          invariant current == null ==> this.content == seen
-          invariant r.content == seen
-          invariant current != null ==> r.tbl[current.val] == (current.val in r.content)
-          decreases if (current != null) then current.footprint else {}
-        {
-            if current.val < r.tbl.Length && !r.tbl[current.val] {
-                r.add(current.val); 
-            }
-            seen := seen + {current.val}; 
-            current := current.next; 
-        }
+      ghost var seen : set<int> := {}; 
+      var current := this.list;
+      while current != null
+        invariant r.Valid()
+        invariant this.tbl.Length <= r.tbl.Length
+        invariant s.tbl.Length <= r.tbl.Length
+        invariant fresh(r.tbl)
+        invariant current != null ==> current.Valid()
+        invariant current != null ==> this.content == seen + current.content
+        invariant current == null ==> this.content == seen
+        invariant r.content == seen
+        decreases if (current != null) then current.footprint else {}
+      {
+          if current.val < r.tbl.Length && !r.tbl[current.val] {
+              r.add(current.val); 
+          }
+          seen := seen + {current.val}; 
+          current := current.next; 
+      }
 
-        var other := s.list;
-        ghost var seen2 : set<int> := {};
-        while other != null
-          invariant r.Valid()
-          invariant s.tbl.Length <= r.tbl.Length
-          invariant fresh(r.tbl)
-          invariant other != null ==> other.Valid()
-          invariant other != null ==> s.content == seen2 + other.content
-          invariant other == null ==> s.content == seen2
-          invariant r.content == this.content + seen2
-          invariant other != null ==> r.tbl[other.val] == (other.val in r.content)
-          decreases if (other != null) then other.footprint else {}
-        {
-            if other.val < r.tbl.Length && !r.tbl[other.val] {
-                r.add(other.val);  
-            }
-            seen2 := seen2 + {other.val};  
-            other := other.next;  
-        }
+      var other := s.list;
+      ghost var seen2 : set<int> := {};
+      while other != null
+        invariant r.Valid()
+        invariant s.tbl.Length <= r.tbl.Length
+        invariant fresh(r.tbl)
+        invariant other != null ==> other.Valid()
+        invariant other != null ==> s.content == seen2 + other.content
+        invariant other == null ==> s.content == seen2
+        invariant r.content == this.content + seen2
+        decreases if (other != null) then other.footprint else {}
+      {
+          if other.val < r.tbl.Length && !r.tbl[other.val] {
+              r.add(other.val);  
+          }
+          seen2 := seen2 + {other.val};  
+          other := other.next;  
+      }
 
 
-        assert r.content == this.content + s.content;
-        assert r.Valid(); 
+      assert r.content == this.content + s.content;
+      assert r.Valid(); 
     }
 
 
     method inter(s: Set) returns (r: Set)
-        requires Valid()
-        requires s.Valid()
-        ensures r.Valid()
-        ensures r.content == this.content * s.content 
+      requires Valid()
+      requires s.Valid()
+      ensures r.Valid()
+      ensures r.content == this.content * s.content 
     {
-        var max := maxUnionHelper(s.tbl,this.tbl);
-        r := new Set(max);  
-    
-        assert this.Valid();
-        assert s.Valid();
-        ghost var seen : set<int> := {};
-        var current := this.list;
-        while current != null
-          invariant r.Valid()
-          invariant this.tbl.Length >= r.tbl.Length
-          invariant s.tbl.Length >= r.tbl.Length
-          invariant fresh(r.tbl)
-          invariant forall i :: i in r.content ==> i < r.tbl.Length
-          invariant current != null ==> current.Valid()
-          invariant current != null ==> this.content == seen + current.content
-          invariant current == null ==> this.content == seen
-          invariant s.tbl[current.val] ==> current.val < r.tbl.Length
-          invariant r.content == seen * s.content  
-          invariant current != null ==> r.tbl[current.val] == (current.val in (seen * s.content))
-          decreases if (current != null) then current.footprint else {}
-        {
-            if current.val < r.tbl.Length && s.tbl[current.val] && !r.tbl[current.val] {
-                r.add(current.val);
-            }
-            seen := seen + {current.val}; 
-            current := current.next; 
-        }
+      var min := min(this.tbl.Length, s.tbl.Length);
+      r := new Set(min);
 
-        assert r.content == this.content * s.content;
-        assert r.Valid();  
+      assert r.tbl.Length == min + 1;
+      assert this.Valid();
+      assert s.Valid(); 
+      assert fresh(r.tbl);
+
+      ghost var seen : set<int> := {};
+      var current := this.list;
+
+      while current != null
+        invariant r.Valid()
+        invariant r.tbl.Length == min + 1
+        invariant r.tbl.Length <= this.tbl.Length + 1
+        invariant r.tbl.Length <= s.tbl.Length + 1
+        invariant fresh(r.tbl)
+        invariant current != null ==> current.Valid()
+        invariant current != null ==> this.content == seen + current.content
+        invariant current == null ==> this.content == seen
+        invariant r.content == s.content * seen
+        decreases if (current != null) then current.footprint else {}
+      {
+          if current.val < r.tbl.Length && current.val < s.tbl.Length && s.tbl[current.val] && !r.tbl[current.val] {
+              r.add(current.val);
+          }
+          seen := seen + {current.val};
+          current := current.next;
+      }
+      assert r.content == this.content * s.content;
+      assert r.Valid();
     }
 
 
@@ -191,35 +189,10 @@ module Ex5 {
     else b
   }
 
-function maxUnion(s: array<bool>, t: array<bool>, i: int) : nat
-  requires 0 <= i <= max(s.Length, t.Length)  
-  decreases max(s.Length, t.Length) - i
-  reads s, t
-{
-  if i == max(s.Length, t.Length) then
-    0
-  else if i < s.Length && i < t.Length && s[i] && t[i] then
-    var nextMax := maxUnion(s, t, i + 1);  
-    if nextMax == -1 then i else nextMax  
-  else
-    maxUnion(s, t, i + 1)  
-}
-function maxUnionHelper(s: array<bool>, t: array<bool>): nat
-  requires s != null && t != null
-  reads s,t 
-{
-  maxUnion(s, t, 0)
-}
-function maxElement(S: set<nat>) : nat
-  requires S != {}  // The set must not be empty
-  ensures forall x :: x in S ==> x <= maxElement(S)  // The result is the largest element
-  ensures maxElement(S) in S  // The result must be an element in the set
-{
-  if |S| == 1 then
-    set#ToSeq(S)[0]  // If the set has one element, return that element
-  else
-    var elem := set#ToSeq(S)[0];  // Get an arbitrary element from the set
-    var rest := S - {elem};  // Remove this element from the set
-    var maxRest := maxElement(rest);  // Recursively find the max of the rest of the set
-    if elem > maxRest then elem else maxRest  // Return the larger of the two
+  function min(a:int,b:int):int{
+    if a <= b
+    then a
+    else b
+  }
+
 }
