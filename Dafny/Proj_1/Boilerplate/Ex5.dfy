@@ -28,7 +28,7 @@ module Ex5 {
         &&
         list.Valid()
         &&
-        forall i :: 0 <= i < tbl.Length ==> tbl[i] == (i in content)
+        (forall i :: 0 <= i < tbl.Length ==> tbl[i] == (i in content))
         &&
         forall i :: i in this.content ==> i < tbl.Length
 
@@ -40,6 +40,7 @@ module Ex5 {
       ensures forall i :: 0 <= i < tbl.Length ==> tbl[i] == false
       ensures forall i :: i in this.content ==> i < size
       ensures tbl.Length == size + 1
+      ensures fresh(tbl)
     {
       tbl := new bool[size + 1] (_=>false);  
       list := null;
@@ -63,6 +64,7 @@ module Ex5 {
       requires Valid()
       ensures Valid()
       ensures content == old(content) + {v}
+      ensures tbl == old(tbl)
       modifies tbl, this
     {
       if (!tbl[v]) {
@@ -84,24 +86,23 @@ module Ex5 {
         requires Valid()
         requires s.Valid()
         ensures r.Valid()
-        ensures r.content == s.content + this.content  
+        ensures r.content == s.content + this.content
+ 
     {
-        var max;
-        if this.tbl.Length >= s.tbl.Length {
-          max := this.tbl.Length;
-        }else{ max := s.tbl.Length;
-        }
+        var max := max(this.tbl.Length,s.tbl.Length);
         r := new Set(max); 
         assert r.tbl.Length == max + 1;
         assert this.Valid();
-        assert s.Valid();
-
+        assert s.Valid(); 
+        assert fresh(r.tbl);
 
         ghost var seen : set<int> := {}; 
         var current := this.list;
         while current != null
           invariant r.Valid()
           invariant this.tbl.Length <= r.tbl.Length
+          invariant s.tbl.Length <= r.tbl.Length
+          invariant fresh(r.tbl)
           invariant current != null ==> forall i :: i in current.content ==> i <  r.tbl.Length 
           invariant current != null ==> current.Valid()
           invariant current != null ==> this.content == seen + current.content
@@ -121,6 +122,8 @@ module Ex5 {
         ghost var seen2 : set<int> := {};
         while other != null
           invariant r.Valid()
+          invariant s.tbl.Length <= r.tbl.Length
+          invariant fresh(r.tbl)
           invariant other != null ==> other.Valid()
           invariant other != null ==> s.content == seen2 + other.content
           invariant other == null ==> s.content == seen2
@@ -152,19 +155,20 @@ module Ex5 {
     
         assert this.Valid();
         assert s.Valid();
-    
-        ghost var seen : set<int> := {}; 
+        ghost var seen : set<int> := {};
         var current := this.list;
         while current != null
           invariant r.Valid()
           invariant this.tbl.Length >= r.tbl.Length
           invariant s.tbl.Length >= r.tbl.Length
-          invariant forall i:: i in r.content ==> i < r.tbl.Length
+          invariant fresh(r.tbl)
+          invariant forall i :: i in r.content ==> i < r.tbl.Length
           invariant current != null ==> current.Valid()
           invariant current != null ==> this.content == seen + current.content
           invariant current == null ==> this.content == seen
-          invariant r.content == seen * s.content 
-          invariant current != null ==> r.tbl[current.val] == (current.val in seen)
+          invariant s.tbl[current.val] ==> current.val < r.tbl.Length
+          invariant r.content == seen * s.content  
+          invariant current != null ==> r.tbl[current.val] == (current.val in (seen * s.content))
           decreases if (current != null) then current.footprint else {}
         {
             if current.val < r.tbl.Length && s.tbl[current.val] && !r.tbl[current.val] {
@@ -206,6 +210,16 @@ function maxUnionHelper(s: array<bool>, t: array<bool>): nat
 {
   maxUnion(s, t, 0)
 }
-
-
+function maxElement(S: set<nat>) : nat
+  requires S != {}  // The set must not be empty
+  ensures forall x :: x in S ==> x <= maxElement(S)  // The result is the largest element
+  ensures maxElement(S) in S  // The result must be an element in the set
+{
+  if |S| == 1 then
+    set#ToSeq(S)[0]  // If the set has one element, return that element
+  else
+    var elem := set#ToSeq(S)[0];  // Get an arbitrary element from the set
+    var rest := S - {elem};  // Remove this element from the set
+    var maxRest := maxElement(rest);  // Recursively find the max of the rest of the set
+    if elem > maxRest then elem else maxRest  // Return the larger of the two
 }
