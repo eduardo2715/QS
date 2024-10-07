@@ -77,7 +77,6 @@ method noRepetitionsLinear(arr: array<nat>) returns (b: bool)
   {
     var v := arr[i];
     
-    assert 0 <= v <= max;  
     
     if (seen[v]) {
       b := false;
@@ -89,9 +88,6 @@ method noRepetitionsLinear(arr: array<nat>) returns (b: bool)
     i := i + 1;
   }
 
-  if (b) {
-    assert forall i, j :: 0 <= i < arr.Length && 0 <= j < arr.Length && i != j ==> arr[i] != arr[j];
-  }
 
   return;
 }

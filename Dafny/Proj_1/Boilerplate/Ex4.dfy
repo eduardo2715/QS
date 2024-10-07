@@ -94,7 +94,6 @@ module Ex4 {
           seen := seen + {current.val};
           current := current.next;
         }
-        assert this.content == seen;
 
         var other := s.list;
 

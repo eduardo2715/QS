@@ -54,8 +54,8 @@ module Ex5 {
       requires Valid()
       ensures Valid()
       ensures b == (v in content)
-    {      b := tbl[v];
-      assert b == (v in content);
+    {      
+      b := tbl[v];
     }
 
 
@@ -91,10 +91,6 @@ module Ex5 {
     {
       var max := max(this.tbl.Length,s.tbl.Length);
       r := new Set(max); 
-      assert r.tbl.Length == max + 1;
-      assert this.Valid();
-      assert s.Valid(); 
-      assert fresh(r.tbl);
 
       ghost var seen : set<int> := {}; 
       var current := this.list;
@@ -136,8 +132,6 @@ module Ex5 {
       }
 
 
-      assert r.content == this.content + s.content;
-      assert r.Valid(); 
     }
 
 
@@ -150,10 +144,6 @@ module Ex5 {
       var min := min(this.tbl.Length, s.tbl.Length);
       r := new Set(min);
 
-      assert r.tbl.Length == min + 1;
-      assert this.Valid();
-      assert s.Valid(); 
-      assert fresh(r.tbl);
 
       ghost var seen : set<int> := {};
       var current := this.list;
@@ -176,8 +166,6 @@ module Ex5 {
           seen := seen + {current.val};
           current := current.next;
       }
-      assert r.content == this.content * s.content;
-      assert r.Valid();
     }
 
 
