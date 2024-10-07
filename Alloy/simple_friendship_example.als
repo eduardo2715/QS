@@ -8,7 +8,7 @@ fact MutualFriendship {
   all p: Person | all f: p.friends | p in f.friends
 }
 
-// A predicate to check if someone has no friends
+// A predicate to check if someone has no friends 
 pred NoFriends[p: Person] {
   no p.friends
 }
