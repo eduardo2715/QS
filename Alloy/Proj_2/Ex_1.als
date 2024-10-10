@@ -1,14 +1,16 @@
-sig Node {}  // Non-member nodes (green in the diagram)
+sig Node {}
 
-sig Member in Node {  
-    nxt: lone Member,                // Next member in the ring (blue in the diagram)
-    qnxt: Node -> lone Node,         // Queue of nodes (green) pointing to this member
+sig Member in Node {
+    nxt: lone Member,
+    qnxt : Node -> lone Node,
     outbox: set Msg
 }
 
-one sig Leader in Member {           // Leader member (L in the diagram)
-    lnxt: Node -> lone Node          // Leader-specific queue relation
+one sig Leader in Member {
+    lnxt: Node -> lone Node
 }
+
+sig LQueue in Member {}
 
 abstract sig Msg {
     sndr: Node,
