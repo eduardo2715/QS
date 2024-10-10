@@ -3,7 +3,6 @@ sig Node {}
 sig Member in Node {
     nxt: lone Member,
     qnxt : Node -> lone Node,
-    // qnxt: set NonMembers
     outbox: set Msg
 }
 
@@ -18,8 +17,6 @@ abstract sig Msg {
     rcvrs: set Node
 }
 
-sig SentMsg, SendingMsg, PendingMsg extends Msg {}
-
 // Fact to enforce the ring topology for the members
 // fact RingTopology {
 //     // 1. Every member has a next member (forming a closed ring)
@@ -30,12 +27,13 @@ sig SentMsg, SendingMsg, PendingMsg extends Msg {}
 // }
 fact RingTopology {
      Member = Member.^nxt
+    // some Member.nxt
 }
 fun NonMembers(): set Node {
     Node - Member
 }
- fact MemberQueue {
+/* fact MemberQueue {
     Member.^qnxt
- }
+} */
 
-run {#Node = 6 #Leader = 1} for 6
+run {#Node = 6 && #Leader = 1 && #Member = 5} for 6
