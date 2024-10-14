@@ -97,7 +97,7 @@ fact LQueueTermination {
         (m2 = l or some m3: Member | (m2 -> m3) in l.lnxt and m3 = l)
 
     // No member can point to itself in the leader's queue
-    //all l: Leader, m: Member | (m -> m) !in l.lnxt
+    all l: Leader, m: Member | (m -> m) !in l.lnxt
 }
 
 
@@ -145,15 +145,7 @@ assert CorrectQueues {
     all m1, m2: Member, n1, n2: Node, n3, n4: Node | m1 != m2 and (n1 -> n2) in m1.qnxt and (n3 -> n4) in m2.qnxt implies (n1 != n3 and n2 != n4 and n1 != n4 and n2 != n3)
 }
 
-assert MemberQueueTermination {
-    all m: Member | 
-        all n1, n2: Node | 
-            (n1 -> n2) in m.qnxt implies 
-            n2 = m or no n3: Node | (n2 -> n3) in m.qnxt
-}
-
-
-check MemberQueueTermination
+check CorrectQueues
 
 
 run{
@@ -171,12 +163,12 @@ run { #Node = 6 && #Leader = 1 && #Member = 5 } for 6
 
 // Predicate to ensure that the leader queue is not empty
 pred NonEmptyLeaderQueue[] {
-    no Leader.lnxt
+    eventually #(Leader.lnxt) > 0
 }
 
 // Predicate to ensure that at least two member queues are not empty
 pred AtLeastTwoNonEmptyMemberQueues[] {
-    #(Member.qnxt) = 1
+    eventually #(Member.qnxt) >= 2
 }
 
 // Run the model to generate a configuration with at least 5 nodes, non-empty leader queue, and two non-empty member queues
