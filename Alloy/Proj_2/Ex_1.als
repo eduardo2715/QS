@@ -61,16 +61,20 @@ pred addqnxt[m: Member, n1: Node, n2: Node] {
 
 fact MQueueTermination {
     // For each member, their queue must eventually terminate with themselves
-    all m: Member | all n1, n2: Node | 
-        (n1 -> n2) in m.qnxt implies 
-        (n1 = m or some n3: Node | (n1 -> n3) in m.qnxt and n3 not in Member)
+    // all m: Member | all n1, n2: Node | 
+    //     (n1 -> n2) in m.qnxt implies 
+    //     (n1 = m or some n3: Node | (n1 -> n3) in m.qnxt and n3 not in Member)
 
-    all m: Member | all n: Node - Member | (m -> n) in m.qnxt implies no (n -> m)
+    // all m: Member | all n: Node - Member | (m -> n) in m.qnxt implies no (n -> m)
 
-    all m: Member | all n1,n2: Node - Member | (m -> n1) in m.qnxt implies (m -> n2) !in m.qnxt
-    all m: Member | all n1,n2: Node - Member | (n1->n2) in m.qnxt implies n1 != n2
+    // all m: Member | all n1,n2: Node - Member | (m -> n1) in m.qnxt implies (m -> n2) !in m.qnxt
+    // all m: Member | all n1,n2: Node - Member | (n1->n2) in m.qnxt implies n1 != n2
     // No self-pointing within the queue, except at the termination
     //all m: Member, n: Node | (n -> n) !in m.qnxt
+    all m1,m2: Member | m1 != m2 implies MemberqueueElements[m1] != MemberqueueElements[m2]
+    all m: Member | no (Member & MemberqueueElements[m])
+    all m: Member | #(m.(m.qnxt)) = 1
+
 }
 
 
