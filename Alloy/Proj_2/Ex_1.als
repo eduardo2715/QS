@@ -1,7 +1,7 @@
 sig Node {}
 
 sig Member in Node {
-    nxt: lone Member,   
+    nxt: one Member,   
     var qnxt: Node -> lone Node, 
     outbox: set Msg
 }
@@ -19,17 +19,11 @@ abstract sig Msg {
 
 // Fact to enforce the ring topology for the members
 fact RingTopology {
-    // 1. Every member has a next member (forming a closed ring)
-    all m: Member | some m.nxt
+    all m:Member | m.(^nxt) = Member
+}
 
-    // 2. Only the Leader can point to itself, others must point to a different member
-    all m: Member - Leader | m.nxt != m
-
-    // 3. The set of members forms a strongly connected cycle (every member is reachable from every other member)
-    all m: Member | m in m.^nxt  
-
-    // 4. Leader must be part of the ring (reachable through transitive closure of nxt)
-    all m: Member | Leader in m.^nxt
+fun MemberqueueElements[m: Member]:set Node{
+    m.^(~(m.qnxt))
 }
 
 // Helper function to get the set of non-member nodes
@@ -69,8 +63,12 @@ fact MQueueTermination {
     // For each member, their queue must eventually terminate with themselves
     all m: Member | all n1, n2: Node | 
         (n1 -> n2) in m.qnxt implies 
-        (n2 = m or some n3: Node | (n2 -> n3) in m.qnxt and n3 = m)
+        (n1 = m or some n3: Node | (n1 -> n3) in m.qnxt and n3 not in Member)
 
+    all m: Member | all n: Node - Member | (m -> n) in m.qnxt implies no (n -> m)
+
+    all m: Member | all n1,n2: Node - Member | (m -> n1) in m.qnxt implies (m -> n2) !in m.qnxt
+    all m: Member | all n1,n2: Node - Member | (n1->n2) in m.qnxt implies n1 != n2
     // No self-pointing within the queue, except at the termination
     //all m: Member, n: Node | (n -> n) !in m.qnxt
 }
@@ -150,7 +148,7 @@ check CorrectQueues
 
 run{
     eventually #(Member.qnxt) > 1
-    eventually #(Leader.lnxt) > 1
+    eventually #(Leader.lnxt) > 0
 } for 3 steps 
 // Run the model with 6 nodes, 1 leader, and 5 members
 run { #Node = 6 && #Leader = 1 && #Member = 5 } for 6
