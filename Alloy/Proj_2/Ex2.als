@@ -1,9 +1,9 @@
 sig Node {}
 
 sig Member in Node {
-    nxt: one Member,   
+    var nxt: one Member,   
     var qnxt: Node -> lone Node, 
-    outbox: set Msg
+    var outbox: set Msg
 }
 
 one sig Leader in Member {
@@ -13,8 +13,8 @@ one sig Leader in Member {
 sig LQueue in Member {}
 
 abstract sig Msg {
-    sndr: Node,
-    rcvrs: set Node
+    var sndr: Node,
+    var rcvrs: set Node
 }
 
 // Fact to enforce the ring topology for the members
@@ -114,3 +114,28 @@ run {
     NonEmptyLeaderQueue[]
     AtLeastTwoNonEmptyMemberQueues[]
 } for 6
+
+
+
+//acoes 
+
+//membership apllication
+
+/* pred memberAplication[m: Member, n: Node] {
+    some n2: Node memberAplicationAux[m, n, n2]
+} */
+
+/* pred memberAplicationAux[m: Member, n1: Node, n2:Node] {
+    // Preconditions
+    //n2 is the last node in the queue
+
+    // Postconditions
+    m.qnxt' = (n1 -> n2) + m.qnxt
+
+    // Frame conditions
+
+} */
+
+//membership promoion
+//lider apllication
+//lider promotion

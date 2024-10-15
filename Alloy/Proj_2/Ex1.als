@@ -45,6 +45,7 @@ fact MQueueTermination {
     all m1,m2: Member | m1 != m2 implies no (MemberQueueElements[m1] & MemberQueueElements[m2])
     all m: Member | no (Member & MemberQueueElements[m])
     //all m: Member, n1,n2:Node | #MemberQueueElements[m] > 0 implies n1.^(m.qnxt) != n2.^(m.qnxt)
+    //all m: Member | one m.qnxt
 }
 
 fact LQueueTermination {
@@ -83,6 +84,6 @@ run {
         //#MemberQueueElements[m1] > 0 &&
         some MemberQueueElements[m2] &&
         some LeaderqueueElements[l] //&&
-        //#LeaderqueueElements[l] > 0
+        //#LeaderqueueElements[l] > 1
 } for 7
 //some m1 , m1 != m2 some queue[m1] and some queue[m2]
