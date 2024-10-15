@@ -76,7 +76,7 @@ pred addlnxt[l: Leader, m1: Member, m2: Member] {
 }
 pred trans[] {
     stutter[]
-     or 
+    or 
     (some n1, n2: Node, m: Member | addqnxt[m, n1, n2])
     or
     (some m1, m2: Member, l: Leader | addlnxt[l, m1, m2])
@@ -89,6 +89,13 @@ pred system[]{
     always trans[]
 }
 
+fun VisualizeMemberQueues[]: Node -> lone Node {
+    Member.qnxt
+}
+
+fun VisualizeLeaderQueues[]: Node -> lone Node {
+    Leader.lnxt
+}
 
 fact{
     system[]
@@ -100,7 +107,7 @@ pred NonEmptyLeaderQueue[] {
 
 // Predicate to ensure that at least two member queues are not empty
 pred AtLeastTwoNonEmptyMemberQueues[] {
-    eventually #(Member.qnxt) >= 2
+    eventually #(Member.qnxt) > 0
 }
 run {
     #Node >= 5

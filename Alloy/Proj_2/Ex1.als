@@ -26,10 +26,6 @@ fun MemberQueueElements[m: Member]:set Node{
     m.^(~(m.qnxt))
 }
 
-fun MemberQueueElementsTest[m: Member]:set Node{
-    m.*(~(m.qnxt))
-}
-
 fun LeaderqueueElements[l: Leader]:set Member{
     l.^(~(l.lnxt))
 }
