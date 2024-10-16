@@ -48,8 +48,8 @@ fact LQueueTermination {
 
 // Each member/Leader must have at most 1 queue
 fact OneQueuePerNode{
-    all m: Member | #((m.qnxt)).m = 1
-    all l: Leader | #((l.lnxt)).l = 1
+    all m: Member | #((m.qnxt)).m <= 1
+    all l: Leader | #((l.lnxt)).l <= 1
 }
 
 // Helper function to visualize the member queues
