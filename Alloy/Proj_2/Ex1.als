@@ -26,6 +26,11 @@ fun MemberQueueElements[m: Member]:set Node{
     m.^(~(m.qnxt))
 }
 
+fact{
+    all m: Member | #((m.qnxt)).m = 1
+    all l: Leader | #((l.lnxt)).l = 1
+}
+
 fun LeaderqueueElements[l: Leader]:set Member{
     l.^(~(l.lnxt))
 }
@@ -46,6 +51,7 @@ fact MQueueTermination {
     all m: Member | no (Member & MemberQueueElements[m])
     //all m: Member, n1,n2:Node | #MemberQueueElements[m] > 0 implies n1.^(m.qnxt) != n2.^(m.qnxt)
     //all m: Member | one m.qnxt
+    //all m:Member | 
 }
 
 fact LQueueTermination {
@@ -67,7 +73,8 @@ fun VisualizeLeaderQueues[]: Node -> lone Node {
 assert CorrectQueues {
     //all m: Member | (Member !in MemberQueueElements[m])
     //all m: Member, n1,n2:Node | ((n1 in MemberQueueElements[m]) && (n2 in MemberQueueElements[m])) implies n1 != n2
-    all m: Member, n1,n2:MemberQueueElements[m] | #MemberQueueElements[m] > 1 implies n1.^(m.qnxt) != n2.^(m.qnxt)
+    all m:Member/*,  n: Node */ | #MemberQueueElements[m] > 1 implies  #((m.qnxt)).m = 1
+    //all m: Member, n1,n2:MemberQueueElements[m] | #MemberQueueElements[m] > 1 implies n1.^(m.qnxt) != n2.^(m.qnxt)
 }
 
 check CorrectQueues
@@ -81,9 +88,9 @@ run {
      some m1, m2: Member, l: Leader |
         m1 != m2 &&
         some MemberQueueElements[m1] &&
-        //#MemberQueueElements[m1] > 0 &&
+        #MemberQueueElements[m1] > 1 &&
         some MemberQueueElements[m2] &&
-        some LeaderqueueElements[l] //&&
-        //#LeaderqueueElements[l] > 1
+        some LeaderqueueElements[l] &&
+        #LeaderqueueElements[l] > 1
 } for 7
 //some m1 , m1 != m2 some queue[m1] and some queue[m2]
