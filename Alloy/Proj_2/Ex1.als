@@ -17,6 +17,9 @@ abstract sig Msg {
     rcvrs: set Node
 }
 
+
+//// TOPOLOGICAL CONSTRAINTS
+
 // members form a ring with each member pointing to another member (or itself);
 fact RingTopology {
     all m:Member | m.(^nxt) = Member
@@ -62,7 +65,18 @@ fun VisualizeLeaderQueues[]: Node -> lone Node {
     Leader.lnxt
 }
 
-// Run the model with 6 nodes, 1 leader, and 5 members
+
+//// MESSAGE-CONSISTENCY CONSTRAINTS
+
+
+
+
+
+//THIS IS JUST FOR TESTING
+//Run the model with 5 nodes, 1 leader
+//at least 2 mambers
+//one of the members queue must have more than one node
+//leader queue must have more than one node
 run {
     #Leader = 1 && 
     #Node > 5 &&
@@ -74,4 +88,3 @@ run {
         some LeaderqueueElements[l] &&
         #LeaderqueueElements[l] > 1
 } for 7
-//some m1 , m1 != m2 some queue[m1] and some queue[m2]

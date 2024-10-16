@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<alloy>
+
+<view>
+
+<defaultnode/>
+
+<defaultedge/>
+
+<node>
+   <type name="Int"/>
+   <type name="Msg"/>
+   <type name="String"/>
+   <type name="univ"/>
+   <type name="seq/Int"/>
+   <set name="$l" type="Node"/>
+   <set name="$m1" type="Node"/>
+   <set name="$m2" type="Node"/>
+</node>
+
+<node shape="Circle" color="Green">
+   <type name="Node"/>
+</node>
+
+<node showlabel="no" shape="Circle" color="Blue">
+   <set name="this/Leader" type="Node"/>
+</node>
+
+<node showlabel="no" shape="Circle" color="White">
+   <set name="this/Member" type="Node"/>
+</node>
+
+<node visible="yes" showlabel="no">
+   <set name="this/LQueue" type="Node"/>
+</node>
+
+<edge color="Black">
+   <relation name="$VisualizeMemberQueues"> <type name="Node"/> <type name="Node"/> </relation>
+</edge>
+
+<edge color="Blue">
+   <relation name="nxt"> <type name="Node"/> <type name="Node"/> </relation>
+</edge>
+
+<edge style="Dashed">
+   <relation name="$VisualizeLeaderQueues"> <type name="Node"/> <type name="Node"/> </relation>
+</edge>
+
+<edge visible="no">
+   <relation name="lnxt"> <type name="Node"/> <type name="Node"/> <type name="Node"/> </relation>
+   <relation name="outbox"> <type name="Node"/> <type name="Msg"/> </relation>
+   <relation name="qnxt"> <type name="Node"/> <type name="Node"/> <type name="Node"/> </relation>
+   <relation name="rcvrs"> <type name="Msg"/> <type name="Node"/> </relation>
+   <relation name="sndr"> <type name="Msg"/> <type name="Node"/> </relation>
+</edge>
+
+</view>
+
+</alloy>
