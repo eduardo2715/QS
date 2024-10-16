@@ -17,69 +17,50 @@ abstract sig Msg {
     rcvrs: set Node
 }
 
-// Fact to enforce the ring topology for the members
+// members form a ring with each member pointing to another member (or itself);
 fact RingTopology {
     all m:Member | m.(^nxt) = Member
 }
 
+// function that returns the set of elements that are in the Member queue of a given member 
 fun MemberQueueElements[m: Member]:set Node{
     m.^(~(m.qnxt))
 }
 
-fact{
-    all m: Member | #((m.qnxt)).m = 1
-    all l: Leader | #((l.lnxt)).l = 1
-}
-
+// function that returns the set of elements that are in the Leader queue of a given leader
 fun LeaderqueueElements[l: Leader]:set Member{
     l.^(~(l.lnxt))
 }
 
-fun LeaderQueueConnections[l: Leader]:set Node -> Node {
-    // Collect the set of all (n -> n') pairs in lnxt, i.e., L -> M1, M1 -> M2, M2 -> M3, ...
-    ^(l.lnxt)
-}
-
-fun MemberQueueConnections[m: Member]:set Node -> Node {
-    // Collect the set of all (n -> n') pairs in qnxt, i.e., M1 -> N1, N1 -> N2, N2 -> N3, ...
-    ^(m.qnxt)
-}
-
-
+//a node that belongs to a member queue cannot belong to another member queue
+// all elements inside Menber queue must be non-Member Nodes (no Members)
 fact MQueueTermination {
     all m1,m2: Member | m1 != m2 implies no (MemberQueueElements[m1] & MemberQueueElements[m2])
     all m: Member | no (Member & MemberQueueElements[m])
-    //all m: Member, n1,n2:Node | #MemberQueueElements[m] > 0 implies n1.^(m.qnxt) != n2.^(m.qnxt)
-    //all m: Member | one m.qnxt
-    //all m:Member | 
 }
 
+// all members that are Lqueue are in the leader queue
+// all elements inside Leader queue must be non-Leader members (no nodes that are not members and no leaders)
 fact LQueueTermination {
     all q: LQueue, l: Leader | q in LeaderqueueElements[l]
     all l: Leader | no(LeaderqueueElements[l] & (Leader + (Node - LQueue)))
-    //all l: Leader | all m1, m2: LeaderqueueElements[l] | m1 != m2 implies m1.^(l.lnxt) != m2.^(l.lnxt)
-    //  all l: Leader | all m: Member | (l -> m) in Leader.lnxt
-    }
+}
+
+// Each member/Leader must have at most 1 queue
+fact OneQueuePerNode{
+    all m: Member | #((m.qnxt)).m = 1
+    all l: Leader | #((l.lnxt)).l = 1
+}
 
 // Helper function to visualize the member queues
 fun VisualizeMemberQueues[]: Node -> lone Node {
     Member.qnxt
 }
 
+// Helper function to visualize the leader queue
 fun VisualizeLeaderQueues[]: Node -> lone Node {
     Leader.lnxt
 }
-
-assert CorrectQueues {
-    //all m: Member | (Member !in MemberQueueElements[m])
-    //all m: Member, n1,n2:Node | ((n1 in MemberQueueElements[m]) && (n2 in MemberQueueElements[m])) implies n1 != n2
-    all m:Member/*,  n: Node */ | #MemberQueueElements[m] > 1 implies  #((m.qnxt)).m = 1
-    //all m: Member, n1,n2:MemberQueueElements[m] | #MemberQueueElements[m] > 1 implies n1.^(m.qnxt) != n2.^(m.qnxt)
-}
-
-check CorrectQueues
-
-
 
 // Run the model with 6 nodes, 1 leader, and 5 members
 run {
