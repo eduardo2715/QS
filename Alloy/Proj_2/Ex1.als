@@ -1,22 +1,24 @@
-sig Node {}
+sig Node {
+  outbox: set Msg
+}
 
-sig Member in Node {
-    nxt: one Member,   
-    var qnxt: Node -> lone Node, 
-    outbox: set Msg
+sig Member in Node { 
+ nxt: one Node, 
+ qnxt : Node -> lone Node 
 }
 
 one sig Leader in Member {
-    var lnxt: Node -> lone Node
+   lnxt: Member -> lone Member
 }
 
 sig LQueue in Member {}
 
-abstract sig Msg {
-    sndr: Node,
-    rcvrs: set Node
+sig Msg {
+  sndr: Node, 
+  rcvrs: set Node 
 }
 
+sig SentMsg, SendingMsg, PendingMsg in Msg {}
 
 //// TOPOLOGICAL CONSTRAINTS
 

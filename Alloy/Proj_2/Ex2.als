@@ -1,21 +1,24 @@
-sig Node {}
-
-sig Member in Node {
-    var nxt: one Member,   
-    var qnxt: Node -> lone Node, 
-    var outbox: set Msg
+sig Node {
+  var outbox: set Msg
 }
 
-one sig Leader in Member {
-    var lnxt: Node -> lone Node
+var sig Member in Node { 
+ var nxt: one Node, 
+ var qnxt : Node -> lone Node 
 }
 
-sig LQueue in Member {}
-
-abstract sig Msg {
-    var sndr: Node,
-    var rcvrs: set Node
+var one sig Leader in Member {
+   var lnxt: Member -> lone Member
 }
+
+var sig LQueue in Member {}
+
+sig Msg {
+  sndr: Node, 
+  var rcvrs: set Node 
+}
+
+var sig SentMsg, SendingMsg, PendingMsg in Msg {}
 
 // Fact to enforce the ring topology for the members
 fact RingTopology {
@@ -23,21 +26,11 @@ fact RingTopology {
 }
 
 fun MemberqueueElements[m: Member]:set Node{
-    m.^(~(m.qnxt))
+    m.*(~(m.qnxt))
 }
 fun LeaderqueueElements[l: Leader]:set Member{
     l.^(~(l.lnxt))
 }
-
-
-// Helper function to get the set of non-member nodes
-/* fun NonMembers[]: set Node {
-    Node - Member
-}
-
-fun OnlyMembers[]: set Node {
-    Member - Leader
-} */
 
 pred init[]{
     no qnxt
@@ -46,40 +39,38 @@ pred init[]{
 
 pred stutter[]{
     qnxt' = qnxt
+    lnxt' = lnxt
+    nxt' = nxt
 }
 
-pred addqnxt[m: Member, n1: Node, n2: Node] {
+
+
+pred memberAplication[m: Member, n: Node] {
+    some n2: Node | memberAplicationAux[m, n, n2]
+}
+
+pred memberAplicationAux[m: Member, n1: Node, n2:Node] {
     // Preconditions
-    (n1 -> n2) !in m.qnxt               // n1 should not already point to n2 in m's queue
-    n1 != n2
-    n1 in (Node - Member)                       // n1 must be a non-member
-    (n2 in (Node - Member)) or (n2 = m)         // n2 can either be another non-member or the member                         // n1 and n2 must be different (no self-pointing)
+    //TODO n2 is the last node in the queue
+    (n1 -> n2) !in m.qnxt                   // n1 should not already point to n2 in m's queue
+    n1 != n2                                // n1 and n2 must be different (no self-pointing)
+    n1 in Node - Member
+    n2 in MemberqueueElements[m]
 
     // Postconditions
-    m.qnxt' = m.qnxt + (n1 -> n2)
+    m.qnxt' = (n1 -> n2) + m.qnxt
 
     // Frame conditions
-    all m1: Member - m | m1.qnxt' = m1.qnxt
-}
-pred addlnxt[l: Leader, m1: Member, m2: Member] {
-    // Preconditions
-    (m1 -> m2) !in l.lnxt                       // m1 should not already point to m2 in l's queue
-    m1 in (Member - Leader)                     // m1 must be a non leader member
-    (m2 in (Member - Leader)) or (m2 = l)       // m2 can either be another non member or the leader
-    m1 != m2                                    // m1 and m2 must be different (no self-pointing)
+    lnxt' = lnxt
+    nxt' = nxt
 
-    // Postconditions
-    l.lnxt' = l.lnxt + (m1 -> m2)
-
-    // Frame conditions
-    all l1: Leader - l | l1.lnxt' = l1.lnxt 
 }
+
+
 pred trans[] {
     stutter[]
-    or 
-    (some n1, n2: Node, m: Member | addqnxt[m, n1, n2])
     or
-    (some m1, m2: Member, l: Leader | addlnxt[l, m1, m2])
+    (some n1, n2: Node | memberAplication[n1, n2])
 }
 
 
@@ -101,19 +92,47 @@ fact{
     system[]
 }
 
-pred NonEmptyLeaderQueue[] {
-    eventually #(Leader.lnxt) > 0
+pred trace1[]{
+    eventually some n1, n2:Node | memberAplication[n1, n2]
+    eventually #(Member.qnxt) > 1
 }
 
-// Predicate to ensure that at least two member queues are not empty
-pred AtLeastTwoNonEmptyMemberQueues[] {
-    eventually #(Member.qnxt) > 0
-}
 run {
-    #Node >= 5
-    NonEmptyLeaderQueue[]
-    AtLeastTwoNonEmptyMemberQueues[]
+    trace1[]
 } for 6
+
+
+
+
+
+/* pred addlnxt[l: Leader, m1: Member, m2: Member] {
+    // Preconditions
+    (m1 -> m2) !in l.lnxt                       // m1 should not already point to m2 in l's queue
+    m1 in (Member - Leader)                     // m1 must be a non leader member
+    (m2 in (Member - Leader)) or (m2 = l)       // m2 can either be another non member or the leader
+    m1 != m2                                    // m1 and m2 must be different (no self-pointing)
+
+    // Postconditions
+    l.lnxt' = l.lnxt + (m1 -> m2)
+
+    // Frame conditions
+    all l1: Leader - l | l1.lnxt' = l1.lnxt 
+} */
+
+/* pred addqnxt[m: Member, n1: Node, n2: Node] {
+    // Preconditions
+    (n1 -> n2) !in m.qnxt                   // n1 should not already point to n2 in m's queue
+    n1 != n2                                // n1 and n2 must be different (no self-pointing)
+    n1 in (Node - Member)                   // n1 must be a non-member
+    (n2 in (Node - Member)) or (n2 = m)     // n2 can either be another non-member or the member                         
+
+    // Postconditions
+    m.qnxt' = m.qnxt + (n1 -> n2)
+
+    // Frame conditions
+    all m1: Member - m | m1.qnxt' = m1.qnxt
+} */
+
 
 
 
