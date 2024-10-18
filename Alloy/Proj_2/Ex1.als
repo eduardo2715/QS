@@ -69,11 +69,7 @@ fun VisualizeLeaderQueues[]: Node -> lone Node {
 
 //// MESSAGE-CONSISTENCY CONSTRAINTS
 
-fact OutboxContent {
-    all n: Node | n.outbox = 
-        (SendingMsg & Leader.outbox) + // Sending messages from the leader
-        (PendingMsg & {msg: Msg | msg.sndr = n}) // My own pending messages
-}
+
 
 //Only sending or sent messages have receivers
 //A sender cannot be in its receivers
@@ -91,16 +87,22 @@ fact {
 //if a message is in a sending state it means that it must have receivers and it belongs to someones outbox
 fact sendingMessage{
     all msg:Msg | msg in SendingMsg implies some (msg.rcvrs) and some n:Node | msg in n.outbox
+    one SendingMsg
+    SendingMsg in (Member - Leader).outbox
+
 }
 
 //if a message is in a pending state it means that it must not have receivers and it belongs to the senders outbox
 fact pendingMessage{
-    all msg:Msg | msg in PendingMsg implies no (msg.rcvrs) and msg in msg.sndr.outbox
+    all msg:Msg | msg in PendingMsg implies no (msg.rcvrs)
+     PendingMsg in Leader.outbox
 }
 
 //if a message is in a sent state it means that it must have receivers and it belongs to the senders outbox
 fact sentMessage{
-    all msg:Msg | msg in SentMsg implies some (msg.rcvrs) and all n:Node | msg !in n.outbox
+    // all msg:Msg | msg in SentMsg implies some (msg.rcvrs) and all n:Node | msg !in n.outbox
+     no (SentMsg & Member.outbox)
+     //received by someone
 }
 
 //THIS IS JUST FOR TESTING
@@ -117,5 +119,8 @@ run {
         #MemberQueueElements[m1] > 1 &&
         some MemberQueueElements[m2] &&
         some LeaderqueueElements[l] &&
-        #LeaderqueueElements[l] > 1
+        #LeaderqueueElements[l] > 1 &&
+        #SentMsg > 1 &&
+        #SendingMsg = 1 &&
+        #PendingMsg > 1
 } for 7
