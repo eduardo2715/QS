@@ -82,6 +82,12 @@ fact receivers{
     all msg:Msg | no (msg.rcvrs & msg.sndr)
 }
 
+fact {
+    all msg:Msg | no (msg.sndr & (Node - Member))
+    all msg:Msg | no (msg.rcvrs & (Node - Member))
+    all n:Node-Member | no(n.outbox)
+}
+
 //if a message is in a sending state it means that it must have receivers and it belongs to someones outbox
 fact sendingMessage{
     all msg:Msg | msg in SendingMsg implies some (msg.rcvrs) and some n:Node | msg in n.outbox
@@ -89,12 +95,12 @@ fact sendingMessage{
 
 //if a message is in a pending state it means that it must not have receivers and it belongs to the senders outbox
 fact pendingMessage{
-    all msg:Msg | msg in SendingMsg implies no (msg.rcvrs) and msg in msg.sndr.outbox
+    all msg:Msg | msg in PendingMsg implies no (msg.rcvrs) and msg in msg.sndr.outbox
 }
 
 //if a message is in a sent state it means that it must have receivers and it belongs to the senders outbox
 fact sentMessage{
-    all msg:Msg | msg in PendingMsg implies some (msg.rcvrs) and all n:Node | msg !in n.outbox
+    all msg:Msg | msg in SentMsg implies some (msg.rcvrs) and all n:Node | msg !in n.outbox
 }
 
 //THIS IS JUST FOR TESTING
@@ -105,12 +111,11 @@ fact sentMessage{
 run {
     #Leader = 1 && 
     #Node > 5 &&
-    #Msg > 0
-/*      some m1, m2: Member, l: Leader |
+     some m1, m2: Member, l: Leader |
         m1 != m2 &&
         some MemberQueueElements[m1] &&
         #MemberQueueElements[m1] > 1 &&
         some MemberQueueElements[m2] &&
         some LeaderqueueElements[l] &&
-        #LeaderqueueElements[l] > 1 */
+        #LeaderqueueElements[l] > 1
 } for 7

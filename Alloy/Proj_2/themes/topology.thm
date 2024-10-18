@@ -13,24 +13,30 @@
    <type name="String"/>
    <type name="univ"/>
    <type name="seq/Int"/>
-   <set name="$l" type="Node"/>
-   <set name="$m1" type="Node"/>
-   <set name="$m2" type="Node"/>
+   <set name="this/PendingMsg" type="Msg"/>
+   <set name="this/SendingMsg" type="Msg"/>
+   <set name="this/SentMsg" type="Msg"/>
+</node>
+
+<node shape="Box" color="Blue">
+   <set name="this/Leader" type="Node"/>
+</node>
+
+<node shape="Box" color="White">
+   <set name="this/Member" type="Node"/>
 </node>
 
 <node shape="Circle" color="Green">
    <type name="Node"/>
 </node>
 
-<node showlabel="no" shape="Circle" color="Blue">
-   <set name="this/Leader" type="Node"/>
+<node showlabel="no">
+   <set name="$l" type="Node"/>
+   <set name="$m1" type="Node"/>
+   <set name="$m2" type="Node"/>
 </node>
 
-<node showlabel="no" shape="Circle" color="White">
-   <set name="this/Member" type="Node"/>
-</node>
-
-<node visible="yes" showlabel="no">
+<node visible="yes" shape="Box">
    <set name="this/LQueue" type="Node"/>
 </node>
 
@@ -42,16 +48,17 @@
    <relation name="nxt"> <type name="Node"/> <type name="Node"/> </relation>
 </edge>
 
+<edge color="Yellow">
+   <relation name="sndr"> <type name="Msg"/> <type name="Node"/> </relation>
+</edge>
+
 <edge style="Dashed">
    <relation name="$VisualizeLeaderQueues"> <type name="Node"/> <type name="Node"/> </relation>
 </edge>
 
-<edge visible="no">
+<edge style="Dashed" visible="no">
    <relation name="lnxt"> <type name="Node"/> <type name="Node"/> <type name="Node"/> </relation>
-   <relation name="outbox"> <type name="Node"/> <type name="Msg"/> </relation>
    <relation name="qnxt"> <type name="Node"/> <type name="Node"/> <type name="Node"/> </relation>
-   <relation name="rcvrs"> <type name="Msg"/> <type name="Node"/> </relation>
-   <relation name="sndr"> <type name="Msg"/> <type name="Node"/> </relation>
 </edge>
 
 </view>
