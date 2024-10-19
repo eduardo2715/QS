@@ -35,6 +35,8 @@ fun LeaderqueueElements[l: Leader]:set Member{
 pred init[]{
     no qnxt
     no lnxt
+    Member = Leader
+    Msg = PendingMsg
 }
 
 pred stutter[]{
@@ -51,14 +53,14 @@ pred memberAplication[m: Member, n: Node] {
 
 pred memberAplicationAux[m: Member, n1: Node, n2:Node] {
     // Preconditions
-    //TODO n2 is the last node in the queue
     (n1 -> n2) !in m.qnxt                   // n1 should not already point to n2 in m's queue
     n1 != n2                                // n1 and n2 must be different (no self-pointing)
     n1 in Node - Member
     n2 in MemberqueueElements[m]
+    all n3: Node | ((n2 -> n3) !in m.qnxt) //n2 is the last in the queue
 
     // Postconditions
-    m.qnxt' = (n1 -> n2) + m.qnxt
+    m.qnxt' = (n2 -> n1) + m.qnxt
 
     // Frame conditions
     lnxt' = lnxt
@@ -66,6 +68,51 @@ pred memberAplicationAux[m: Member, n1: Node, n2:Node] {
 
 }
 
+pred memberPromotion[m:Member, n:Node]{
+    //Preconditions
+    (m -> n) in m.qnxt //the node is the first in line to become member
+    n in Node - Member //node isnt a member
+    n in MemberqueueElements[m] //node is in the queue
+
+    //Postconditions
+    n' in Member //node becomes a member
+    m.nxt' = n // member now points to newly appointed node
+    n.nxt' = m.nxt //newly apointed node points to where member used to point
+    lone n2: Node | (n -> n2) in m.qnxt implies  m.qnxt' = m.qnxt - (m -> n) - (n -> n2) + (m ->  n2)
+    // updated meber queue so that node that was before newly appointed node now points to leader
+
+    //Frame conditions
+    lnxt' = lnxt
+}   
+
+pred memberExit[m:Member]{
+    //Preconditons
+    m not in Leader //member isnt the leader
+    one l:Leader | m not in LeaderqueueElements[l] // member not in the leaderqueuelements
+    no (Node & MemberqueueElements[m]) //member has no nodes in its queue
+    no m.outbox //all its messages are sent
+
+    //Postconditions
+    m' not in Member //no longer a member
+    (m.~nxt).nxt' = m.nxt //close the loop
+
+    //Frame conditions
+    lnxt' = lnxt
+    qnxt' = qnxt
+
+}
+
+pred nonMemberExit[n:Node]{
+    //Preconditions
+    n not in Member //node isnt a member
+    some m: Member | n in MemberqueueElements[m]
+
+    //Postconditions
+    some m: Member | n in MemberqueueElements[m] implies n' not in MemberqueueElements[m'] && 
+    some n2: Node | lone n3: Node | (n2 ->n ) in m.qnxt && (n -> n3) in m.qnxt &&
+    m.qnxt' = m.qnxt -  (n2 -> n) - (n -> n3) + (n2 -> n3)
+
+}
 
 pred trans[] {
     stutter[]
@@ -93,8 +140,14 @@ fact{
 }
 
 pred trace1[]{
-    eventually some n1, n2:Node | memberAplication[n1, n2]
+    eventually some m, n2:Node | memberAplication[m, n2] 
     eventually #(Member.qnxt) > 1
+    #Node >= 5
+    #Leader = 1
+    // eventually some m: Member, n: Node | memberPromotion[m,n]
+    // eventually some n: Node | nonMemberExit[n]
+    // eventually some m: Member | memberExit[m]
+
 }
 
 run {
