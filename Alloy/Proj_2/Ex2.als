@@ -86,7 +86,6 @@ pred memberPromotion[m:Member, n:Node]{ //curruntly works for members with a sin
     n in MemberqueueElements[m] //node is in the queue
 
     //Postconditions
-    //Member' = Member + n //node becomes a member
     nxt' = nxt - (m->m.nxt) + (m->n) + (n->m.nxt) // member now points to newly appointed node
     //lone n2: Node | (n -> n2) in m.qnxt implies  m.qnxt' = m.qnxt - (m -> n) - (n -> n2) + (m ->  n2)
     // updated meber queue so that node that was before newly appointed node now points to leader
@@ -94,6 +93,7 @@ pred memberPromotion[m:Member, n:Node]{ //curruntly works for members with a sin
     //Frame conditions
     lnxt' = lnxt
     Leader' = Leader
+    Member' = Member + n
     Msg' = Msg
 }
 
