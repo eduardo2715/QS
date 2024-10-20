@@ -79,7 +79,7 @@ pred memberAplicationAux[m: Member, n1: Node, n2: Node] {
 
 
 
-pred memberPromotion[m:Member, n:Node]{
+pred memberPromotion[m:Member, n:Node]{ //curruntly works for members with a single queue element
     //Preconditions
     (n -> m) in m.qnxt //the node is the first in line to become member
     n in Node - Member //node isnt a member
@@ -105,7 +105,7 @@ fun PA[m:Member, n:Node]:some Node{
 }
 
 
-pred memberExit[m:Member]{
+pred memberExit[m:Member]{ //not working properly
     //Preconditons
     m not in Leader //member isnt the leader
     one l:Leader | m not in LeaderqueueElements[l] // member not in the leaderqueuelements
@@ -126,14 +126,13 @@ pred memberExit[m:Member]{
 
 }
 
-pred nonMemberExit[m: Member, n: Node] {
+pred nonMemberExit[m: Member, n: Node] { //currenty only removing the last member from the queue
     // Preconditions
     n not in Member                        // n isn't a member
     n in MemberqueueElements[m]            // n is in m's queue
 
     //Postconditions
     //some m: Member | n in MemberqueueElements[m] implies n' not in MemberqueueElements[m'] && 
-    some n3: MemberqueueElements[m] | (n -> n3) in m.qnxt &&
     m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt))
 
     // Frame conditions
