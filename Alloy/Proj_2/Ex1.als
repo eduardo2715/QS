@@ -42,6 +42,7 @@ fun LeaderqueueElements[l: Leader]:set Member{
 fact MQueueTermination {
     all m1,m2: Member | m1 != m2 implies no (MemberQueueElements[m1] & MemberQueueElements[m2])
     all m: Member | no (Member & MemberQueueElements[m])
+    all n: Node | all m: Member | some n.(m.qnxt) implies m in n.^(m.qnxt)
 }
 
 // all members that are Lqueue are in the leader queue
@@ -105,7 +106,7 @@ fact outbox {
 }
 
 fact nodesCantReceiveTheirOwnMessage {
-
+    all msg: Msg | no (msg.rcvrs & msg.sndr)
 }
 
 //if a message is in a sent state it means that it must have receivers and it belongs to the senders outbox

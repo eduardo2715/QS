@@ -47,6 +47,27 @@ pred stutter[]{
     Member' = Member
     Leader' = Leader
     Msg' = Msg
+    LQueue' = LQueue
+}
+
+pred stutterMessage[]{
+    Msg' = Msg
+    rcvrs' = rcvrs
+    sndr' = sndr
+    outbox' = outbox
+}
+pred stutterLeader[]{
+    Leader' = Leader
+    lnxt' = lnxt
+    LQueue' = LQueue
+}
+pred stutterMember[]{
+    qnxt' = qnxt
+
+}
+pred stutterRing[]{
+    nxt' = nxt
+    Member' = Member
 }
 
 pred memberApplication[m: Member, n: Node] {
@@ -59,8 +80,6 @@ pred memberApplicationAux[m: Member, n1: Node, n2: Node] {
     n1 != n2                                // n1 and n2 must be different (no self-pointing)
     n1 in Node - Member                     // n1 must not already be a Member
     n1 not in MemberqueueElements[m]         // n1 should not already be in the member's queue
-    // all m2:Member | no (MemberqueueElements[m2] & n1)
-    // no (MemberqueueElements[m] & Member)
 
     // If the queue is empty, n2 should be the member itself (n1 will point to the member)
     #MemberqueueElements[m] = 0 implies n2 = m
@@ -75,11 +94,9 @@ pred memberApplicationAux[m: Member, n1: Node, n2: Node] {
     all m2 : Member' - m | m2.qnxt' = m2.qnxt
     //some n: Node | n != m && n in MemberqueueElements[m] implies (n -> m) in m.qnxt'
     // Frame conditions
-    lnxt' = lnxt
-    nxt' = nxt
-    Member' = Member
-    Leader' = Leader
-    Msg' = Msg
+    stutterLeader[]
+    stutterMessage[]
+    stutterRing[]
 }
 
 
@@ -93,15 +110,15 @@ pred memberPromotion[m:Member, n:Node]{
 
     //Postconditions
     nxt' = nxt - (m->m.nxt) + (m->n) + (n->m.nxt) // member now points to newly appointed node
-    (some n.(m.qnxt)) implies (m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt)))
-    no(n.(m.qnxt)) implies m.qnxt' = m.qnxt - (~(m.qnxt)[n] -> n)
-    //m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n)
+    // (some n.(m.qnxt)) implies (m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt)))
+    // no(n.(m.qnxt)) implies m.qnxt' = m.qnxt - (~(m.qnxt)[n] -> n)
+    m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt))
     Member' = Member + n //node becomes a member
 
     //Frame conditions
-    lnxt' = lnxt
-    Leader' = Leader
-    Msg' = Msg
+    all m2 : Member' - m | m2.qnxt' = m2.qnxt
+stutterMessage[]
+   stutterLeader[] 
 }
 
 pred memberExit[m:Member]{ //not working properly
@@ -164,11 +181,9 @@ pred leaderApplicationAux[l: Leader, m1: Member, m2: Member] {
     l.lnxt' = (m1 -> m2) + l.lnxt             // Add the new connection (n1 -> n2)
 
     // Frame conditions
-    qnxt' = qnxt
-    nxt' = nxt
-    Member' = Member
-    Leader' = Leader
-    Msg' = Msg
+    stutterRing[]
+    stutterMember[]
+    stutterMessage[]
 }
 
 pred leaderPromotion[l:Leader, m:Member]{
@@ -177,16 +192,16 @@ pred leaderPromotion[l:Leader, m:Member]{
     m in Member - Leader //node isnt a member
     m in LeaderqueueElements[l] //node is in the queue
     no MemberqueueElements[l]
+    no l.outbox
 
     //Postconditions
     m.lnxt' = l.lnxt - (m->l)
-    //Leader' = (Leader - l) + m //node becomes a member
+    Leader' = m //node becomes a member
 
     //Frame conditions
-    qnxt' = qnxt
-    Member' = Member
-    Msg' = Msg
-    nxt' = nxt
+    stutterRing[]
+    stutterMember[]
+    stutterMessage[]
 }
 
 pred trans[] {
@@ -200,7 +215,9 @@ pred trans[] {
     or
     (some m: Member | memberExit[m])
     or
-    (some n1, n2: Node | leaderApplication[n1, n2])
+    (some l: Leader | some m: Member |  leaderApplication[l, m])
+    or 
+    (some l: Leader | some m: Member  | leaderPromotion[l,m])
 }
 
 pred system[]{
@@ -221,30 +238,21 @@ fact{
     system[]
 }
 
-pred trace1[]{
-    some m, n1, n2, n3:Node |
-    n1!=n2 and n1!=n3 and n2!=n3
-    and
-    eventually (memberApplication[m, n1]
-    and eventually (memberApplication[m,n2]
-    and eventually memberApplication[m,n3])
-            )
-}
-
-pred traceLQ[]{
+pred trace1[] {
     #Leader = 1
-
-    some l:Leader |
-    eventually #MemberqueueElements[l] = 3
+    some l: Leader |
+    eventually (#LeaderqueueElements[l] = 2 and (
+         eventually #LeaderqueueElements[l] = 1
+    )
+    )
 }
-run {
-    traceLQ[]
-} for 5
+
 
 
 run {
     trace1[]
 } for 5
+
 
 /* pred trace2[]{
     eventually( #Member = 3
