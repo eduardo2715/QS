@@ -49,6 +49,7 @@ fact MQueueTermination {
 fact LQueueTermination {
     all q: LQueue, l: Leader | q in LeaderqueueElements[l]
     all l: Leader | no(LeaderqueueElements[l] & (Leader + (Node - LQueue)))
+    all l: Leader |Leader in l.*(~(l.lnxt))
 }
 
 // Each member/Leader must have at most 1 queue
