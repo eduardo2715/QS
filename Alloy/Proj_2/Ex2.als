@@ -48,11 +48,11 @@ pred stutter[]{
     Msg' = Msg
 }
 
-pred memberAplication[m: Member, n: Node] {
-    some n2: Node | memberAplicationAux[m, n, n2]
+pred memberApplication[m: Member, n: Node] {
+    some n2: Node | memberApplicationAux[m, n, n2]
 }
 
-pred memberAplicationAux[m: Member, n1: Node, n2: Node] {
+pred memberApplicationAux[m: Member, n1: Node, n2: Node] {
     // Preconditions
     (n1 -> n2) !in m.qnxt                   // n1 should not already point to n2 in m's queue
     n1 != n2                                // n1 and n2 must be different (no self-pointing)
@@ -88,6 +88,7 @@ pred memberPromotion[m:Member, n:Node]{
     //Postconditions
     nxt' = nxt - (m->m.nxt) + (m->n) + (n->m.nxt) // member now points to newly appointed node
     m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt))
+    //m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n)
     Member' = Member + n //node becomes a member
 
     //Frame conditions
@@ -95,14 +96,6 @@ pred memberPromotion[m:Member, n:Node]{
     Leader' = Leader
     Msg' = Msg
 }
-
-fun PB[m:Member, n:Node]:some Node{
-    n.(m.qnxt)
-}
-fun PA[m:Member, n:Node]:some Node{
-    ~(m.qnxt)[n]
-}
-
 
 pred memberExit[m:Member]{ //not working properly
     //Preconditons
@@ -142,19 +135,48 @@ pred nonMemberExit[m: Member, n: Node] { //currenty only removing the last membe
     Msg' = Msg
 }
 
+pred leaderApplication[l: Leader, m: Member] {
+    some m2: Member | leaderApplicationAux[l, m, m2]
+}
+
+pred leaderApplicationAux[l: Leader, m1: Member, m2: Member] {
+    // Preconditions
+    (m1 -> m2) !in l.lnxt                   // n1 should not already point to n2 in l's queue
+    m1 != m2                                // n1 and n2 must be different (no self-pointing)
+    m1 in Member - Leader                     // n1 must not already be a Leader
+    m1 not in LeaderqueueElements[l]         // n1 should not already be in the member's queue
+    // If the queue is empty, n2 should be the member itself (n1 will point to the member)
+    #LeaderqueueElements[l] = 0 implies m2 = l
+    // If the queue is not empty, n2 must be the last node in the queue
+    #LeaderqueueElements[l] > 0 implies {
+        m2 in LeaderqueueElements[l]          // n2 is a node in the queue
+        no m0: Member | (m0 -> m2) in l.lnxt    // n2 should not point to any other node (last in the queue)
+    }
+
+    // Postconditions
+    l.lnxt' = (m1 -> m2) + l.lnxt             // Add the new connection (n1 -> n2)
+
+    // Frame conditions
+    qnxt' = qnxt
+    nxt' = nxt
+    Member' = Member
+    Leader' = Leader
+    Msg' = Msg
+}
 
 pred trans[] {
     stutter[]
     or
-    (some n1, n2: Node | memberAplication[n1, n2])
+    (some n1, n2: Node | memberApplication[n1, n2])
     or
     (some m: Member, n: Node | memberPromotion[m, n])
     or
     (some m: Member, n: Node | nonMemberExit[m ,n])
     or
     (some m: Member | memberExit[m])
+    or
+    (some n1, n2: Node | leaderApplication[n1, n2])
 }
-
 
 pred system[]{
     init[]
@@ -178,11 +200,11 @@ fact{
     some m, n1, n2, n3:Node |
     n1!=n2 and n1!=n3 and n2!=n3
     and
-    eventually (memberAplication[m, n1]
+    eventually (memberApplication[m, n1]
         and 
-        eventually (memberAplication[m, n2] 
+        eventually (memberApplication[m, n2] 
             and
-            eventually (memberAplication[m, n3]
+            eventually (memberApplication[m, n3]
                 and
                 eventually nonMemberExit[m, n1]
             )
@@ -195,12 +217,72 @@ run {
     trace1[]
 } for 5 */
 
-//TODO Fix memberExit[m]
-pred trace3[]{
+/* pred trace2[]{
     eventually( #Member = 3
     and 
     some m :Member | (eventually memberExit[m]))
 }
 run {
+    trace2[]
+} for 5 */
+
+/* pred trace3[]{
+
+    some m1:Member, n1, n2, n3:Node | 
+    m1 != n1
+    and
+    n1!=n2 and n1!=n3 and n2!=n3
+    and
+    eventually (memberApplication[m1, n1]
+    and
+    eventually (memberApplication[m1, n2]
+    and
+    eventually (memberPromotion[m1, n1]
+    and
+    eventually memberApplication[n1, n3])))
+    
+}
+run{
     trace3[]
-} for 5
+}for 5 */
+
+/* pred trace4[]{
+    #Leader = 1
+    and
+    eventually (#Member > 1
+    and
+    some m1,m2:Member | 
+    m1 != m2
+    and
+    eventually (#MemberqueueElements[m1] > 0
+    and 
+    eventually #MemberqueueElements[m2] > 0)
+    )
+}
+run{
+    trace4[]
+}for 5 */
+
+//TESTING
+fact OneQueuePerNode{
+    all m: Member | #((m.qnxt)).m <= 1
+    all l: Leader | #((l.lnxt)).l <= 1
+}
+
+
+pred trace5[]{
+    #Leader = 1
+    and
+    eventually (#Member > 2
+    and
+    some l:Leader, m1, m2:Member - Leader | 
+    m1!=m2
+    and
+    eventually (leaderApplication[l,m1]
+    and 
+    eventually leaderApplication[l,m2])
+    )
+}
+run{
+    trace5[]
+}for 5
