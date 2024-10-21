@@ -87,6 +87,7 @@ pred memberPromotion[m:Member, n:Node]{
 
     //Postconditions
     nxt' = nxt - (m->m.nxt) + (m->n) + (n->m.nxt) // member now points to newly appointed node
+    m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt))
     Member' = Member + n //node becomes a member
 
     //Frame conditions
@@ -113,12 +114,12 @@ pred memberExit[m:Member]{ //not working properly
 
     //Postconditions
 
+    Member' = Member - m
     nxt' = nxt - ((m.~nxt) -> m) - (m -> m.nxt) + ((m.~nxt) -> m.nxt)
 
     //Frame conditions
     qnxt' = qnxt
     lnxt' = lnxt
-    Member' = Member
     Leader' = Leader
     Msg' = Msg
 
@@ -174,22 +175,6 @@ fact{
 }
 
 /* pred trace1[]{
-    some m, n1:Node |
-    (eventually memberAplication[m, n1]
-    and 
-    eventually memberPromotion[m, n1]
-    and
-    eventually nonMemberExit[m, n1]
-    )
-
-    #Node >= 5
-    #Leader = 1
-}
-run {
-    trace1[]
-} for 5 */
-
-pred trace2[]{
     some m, n1, n2, n3:Node |
     n1!=n2 and n1!=n3 and n2!=n3
     and
@@ -207,15 +192,15 @@ pred trace2[]{
 }
 
 run {
-    trace2[]
-} for 5
+    trace1[]
+} for 5 */
 
 //TODO Fix memberExit[m]
-/* pred trace3[]{
+pred trace3[]{
     eventually( #Member = 3
     and 
     some m :Member | (eventually memberExit[m]))
 }
 run {
     trace3[]
-} for 5 */
+} for 5
