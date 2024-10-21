@@ -204,6 +204,59 @@ pred leaderPromotion[l:Leader, m:Member]{
     stutterMessage[]
 }
 
+pred broadcastInitialisation[l: Leader]{
+    //Pre conditions
+    some l.outbox
+    some l.nxt
+
+    //Post conditions
+    some m: Msg | m in l.outbox implies l.outbox' = l.outbox - m &&
+     l.nxt.outbox' = l.nxt.outbox + m &&
+     m.rcvrs' = m.rcvrs + l.nxt &&
+     PendingMsg' = PendingMsg - m &&
+     SendingMsg' = m
+
+
+    //Frame conditions
+    stutterRing[]
+    stutterMember[]
+    stutterLeader[]
+}
+
+pred MessageRedirect[m:Member,ms: SendingMsg]{
+    //Pre conditions
+    ms in m.outbox
+    m.nxt != Leader
+
+    //Post conditions
+    ms.rcvrs' = m.rcvrs + m.nxt
+    m.outbox' = m.outbox - ms
+    m.nxt.outbox' = m.nxt.outbox + ms
+
+    //Frame conditions
+    stutterRing[]
+    stutterRing[]
+    stutterLeader[]
+}
+
+pred broadcastTermination[m:Member,msg: Msg]{
+    //Pre conditions
+    msg in m.outbox
+    msg in SendingMsg
+    m.nxt = Leader
+
+    //Post conditions
+    m.outbox' = m.outbox - msg
+    SentMsg' =  SentMsg + Msg
+    SendingMsg' = SendingMsg - msg
+
+
+    //Frame conditions
+    stutterRing[]
+    stutterRing[]
+    stutterLeader[]
+}
+
 pred trans[] {
     stutter[]
     or
