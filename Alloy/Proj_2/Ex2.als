@@ -164,6 +164,24 @@ pred leaderApplicationAux[l: Leader, m1: Member, m2: Member] {
     Msg' = Msg
 }
 
+pred leaderPromotion[l:Leader, m:Member]{
+    //Preconditions
+    (m -> l) in l.lnxt //the node is the first in line to become member
+    m in Member - Leader //node isnt a member
+    m in LeaderqueueElements[l] //node is in the queue
+    no MemberqueueElements[l]
+
+    //Postconditions
+    m.lnxt' = l.lnxt - (m->l)
+    Leader' = (Leader - l) + m //node becomes a member
+
+    //Frame conditions
+    qnxt' = qnxt
+    Member' = Member
+    Msg' = Msg
+    nxt' = nxt
+}
+
 pred trans[] {
     stutter[]
     or
@@ -275,12 +293,12 @@ pred trace5[]{
     and
     eventually (#Member > 2
     and
-    some l:Leader, m1, m2:Member - Leader | 
-    m1!=m2
-    and
+    some l:Leader, m1/* , m2 */:Member - Leader | 
+/*     m1!=m2
+    and */
     eventually (leaderApplication[l,m1]
     and 
-    eventually leaderApplication[l,m2])
+    eventually leaderPromotion[l,m1])
     )
 }
 run{

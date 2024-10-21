@@ -11,7 +11,9 @@ pred init[]{
     no spouse
     no children
     Person.liveness = Alive + Unborn
+    #liveness.Alive >= 2
 }
+
 pred stutter[]{
     spouse' = spouse
     children' = children
@@ -67,16 +69,29 @@ pred marry[p1:Person, p2:Person]{
     liveness' = liveness
 }
 
-
-pred fairness[] {
+pred fairnessDie[] {
    some p:Person | 
    (eventually always p.liveness = Alive)
    implies
    (always eventually die[p])
 }
 
+pred fairnessBeBorn[] {
+   all p, p1, p2:Person | 
+   (eventually always p.liveness = Unborn
+   and (p1+p2).liveness = Alive and p1 != p2)
+   implies
+   (always eventually beBorn[p, p1, p2])
+}
 
+pred strongerFairnessUnborn[] {
+    always (some liveness.Unborn implies #liveness.Alive >=2)
+}
 
+pred fairness[]{
+    fairnessDie[]
+    fairnessBeBorn[]
+}
 
 pred trace1[]{
     eventually some p:Person | die[p]
@@ -89,6 +104,16 @@ pred trace2[]{
 pred trace3[]{
     eventually some p1, p2:Person | marry[p1, p2]
 }
+
+assert a1 {
+    (strongerFairnessUnborn[] and fairness[]) implies eventually all p:Person | p.liveness = Dead
+}
+
+run{
+    strongerFairnessUnborn[] and fairness[]
+} for 3
+
+check a1 for 5
 
 
 fact{system[]}
