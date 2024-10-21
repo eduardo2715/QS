@@ -79,7 +79,7 @@ pred memberAplicationAux[m: Member, n1: Node, n2: Node] {
 
 
 
-pred memberPromotion[m:Member, n:Node]{ //curruntly works for members with a single queue element
+pred memberPromotion[m:Member, n:Node]{
     //Preconditions
     (n -> m) in m.qnxt //the node is the first in line to become member
     n in Node - Member //node isnt a member
@@ -87,13 +87,11 @@ pred memberPromotion[m:Member, n:Node]{ //curruntly works for members with a sin
 
     //Postconditions
     nxt' = nxt - (m->m.nxt) + (m->n) + (n->m.nxt) // member now points to newly appointed node
-    //lone n2: Node | (n -> n2) in m.qnxt implies  m.qnxt' = m.qnxt - (m -> n) - (n -> n2) + (m ->  n2)
-    // updated meber queue so that node that was before newly appointed node now points to leader
+    Member' = Member + n //node becomes a member
 
     //Frame conditions
     lnxt' = lnxt
     Leader' = Leader
-    Member' = Member + n
     Msg' = Msg
 }
 
@@ -126,7 +124,7 @@ pred memberExit[m:Member]{ //not working properly
 
 }
 
-pred nonMemberExit[m: Member, n: Node] { //currenty only removing the last member from the queue
+pred nonMemberExit[m: Member, n: Node] { //currenty only removing the last member from the queue (?)
     // Preconditions
     n not in Member                        // n isn't a member
     n in MemberqueueElements[m]            // n is in m's queue
@@ -195,13 +193,17 @@ pred trace2[]{
     some m, n1, n2, n3:Node |
     n1!=n2 and n1!=n3 and n2!=n3
     and
-    eventually memberAplication[m, n1]
-    and 
-    eventually memberAplication[m, n2]
-    and
-    eventually memberAplication[m, n3]
-    and
-    eventually nonMemberExit[m, n1]
+    eventually (memberAplication[m, n1]
+        and 
+        eventually (memberAplication[m, n2] 
+            and
+            eventually (memberAplication[m, n3]
+                and
+                eventually nonMemberExit[m, n1]
+            )
+        ) 
+    )
+    
 }
 
 run {
