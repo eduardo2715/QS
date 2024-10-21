@@ -59,8 +59,8 @@ pred memberApplicationAux[m: Member, n1: Node, n2: Node] {
     n1 != n2                                // n1 and n2 must be different (no self-pointing)
     n1 in Node - Member                     // n1 must not already be a Member
     n1 not in MemberqueueElements[m]         // n1 should not already be in the member's queue
-    all m2:Member | no (MemberqueueElements[m2] & n1)
-    no (MemberqueueElements[m] & Member)
+    // all m2:Member | no (MemberqueueElements[m2] & n1)
+    // no (MemberqueueElements[m] & Member)
 
     // If the queue is empty, n2 should be the member itself (n1 will point to the member)
     #MemberqueueElements[m] = 0 implies n2 = m

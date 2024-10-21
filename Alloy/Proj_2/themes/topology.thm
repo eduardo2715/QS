@@ -48,7 +48,7 @@
    <relation name="nxt"> <type name="Node"/> <type name="Node"/> </relation>
 </edge>
 
-<edge color="Yellow" visible="no">
+<edge color="Yellow" visible="no" attribute="yes">
    <relation name="sndr"> <type name="Msg"/> <type name="Node"/> </relation>
 </edge>
 
@@ -63,6 +63,9 @@
 
 <edge visible="no">
    <relation name="outbox"> <type name="Node"/> <type name="Msg"/> </relation>
+</edge>
+
+<edge visible="no" attribute="yes">
    <relation name="rcvrs"> <type name="Msg"/> <type name="Node"/> </relation>
 </edge>
 

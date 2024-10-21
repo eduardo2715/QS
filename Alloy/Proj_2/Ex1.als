@@ -75,7 +75,6 @@ fun VisualizeLeaderQueues[]: Node -> lone Node {
 //Only sending or sent messages have receivers
 //A sender cannot be in its receivers
 fact receivers{
-    all msg:Msg | msg in PendingMsg implies no(msg.rcvrs)
     all msg:Msg | no (msg.rcvrs & msg.sndr)
 }
 
@@ -95,14 +94,25 @@ fact sendingMessage{
 
 //if a message is in a pending state it means that it must not have receivers and it belongs to the senders outbox
 fact pendingMessage{
-    all msg:Msg | msg in PendingMsg implies no (msg.rcvrs)
-     PendingMsg in Leader.outbox
+    all msg: PendingMsg | no (msg.rcvrs)
+    all msg: PendingMsg | msg in msg.sndr.outbox
+}
+
+fact outbox {
+    all n: Node - Leader | 
+        all msg: Msg | msg in n.outbox and msg.sndr = Leader implies n in Member && n in msg.rcvrs
+
+}
+
+fact nodesCantReceiveTheirOwnMessage {
+
 }
 
 //if a message is in a sent state it means that it must have receivers and it belongs to the senders outbox
 fact sentMessage{
     // all msg:Msg | msg in SentMsg implies some (msg.rcvrs) and all n:Node | msg !in n.outbox
      no (SentMsg & Member.outbox)
+     all msg: SentMsg | some msg.rcvrs
      //received by someone
 }
 
