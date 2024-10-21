@@ -48,7 +48,7 @@
    <relation name="nxt"> <type name="Node"/> <type name="Node"/> </relation>
 </edge>
 
-<edge color="Yellow">
+<edge color="Yellow" visible="no">
    <relation name="sndr"> <type name="Msg"/> <type name="Node"/> </relation>
 </edge>
 
@@ -59,6 +59,11 @@
 <edge style="Dashed" visible="no">
    <relation name="lnxt"> <type name="Node"/> <type name="Node"/> <type name="Node"/> </relation>
    <relation name="qnxt"> <type name="Node"/> <type name="Node"/> <type name="Node"/> </relation>
+</edge>
+
+<edge visible="no">
+   <relation name="outbox"> <type name="Node"/> <type name="Msg"/> </relation>
+   <relation name="rcvrs"> <type name="Msg"/> <type name="Node"/> </relation>
 </edge>
 
 </view>

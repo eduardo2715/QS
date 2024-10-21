@@ -33,6 +33,7 @@ fun LeaderqueueElements[l: Leader]:set Member{
 }
 
 pred init[]{
+    all n:Node | n.outbox = PendingMsg
     no qnxt
     no lnxt
     Member = Leader
@@ -286,6 +287,7 @@ fact OneQueuePerNode{
     all m: Member | #((m.qnxt)).m <= 1
     all l: Leader | #((l.lnxt)).l <= 1
 }
+
 
 
 pred trace5[]{
