@@ -367,7 +367,7 @@ pred h[] {
                                                         and eventually nonMemberExit[m3, n1]))))))) // non-member exit
 }
 
-run {
+run { //takes about 5:30 minutes to run but works :)
     h[]
 } for 5 Node, 1 Msg, 12 steps
 
