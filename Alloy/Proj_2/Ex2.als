@@ -254,6 +254,7 @@ pred MessageRedirect[m:Member,msg: Msg]{
     stutterRing[]
     stutterRing[]
     stutterLeader[]
+    stutterMember[]
     PendingMsg ' =  PendingMsg
     SentMsg' = SentMsg
     SendingMsg' = SendingMsg
@@ -263,6 +264,7 @@ pred broadcastTermination[m:Member,msg: Msg]{
     //Pre conditions
     msg in m.outbox
     msg in SendingMsg
+    m in msg.rcvrs
     m.nxt = Leader
     m != Leader
     //Post conditions
@@ -274,6 +276,7 @@ pred broadcastTermination[m:Member,msg: Msg]{
     stutterRing[]
     stutterRing[]
     stutterLeader[]
+    stutterMember[]
     SentMsg' =  SentMsg + msg
     SendingMsg' = SendingMsg - msg
     PendingMsg' = PendingMsg
@@ -296,7 +299,7 @@ pred trans[] {
     or 
     (some l: Leader, m: Msg | broadcastInitialisation[l,m])
     or 
-    (some m: Member | some sm: SendingMsg | MessageRedirect[m, sm])
+    (some m: Member | some sm: Msg | MessageRedirect[m, sm])
     or
     (some m: Member - Leader, msg: Msg | broadcastTermination[m,msg])
     
@@ -335,25 +338,26 @@ pred trace3[]{
 
 
 
-run {
+/* run {
     trace3[]
-} for exactly 3 Node, 0 Msg, 10 steps
+} for exactly 3 Node, 0 Msg, 10 steps */
 
 
 pred trace2[] {
-    eventually (#Member = 3 &&
-    eventually (some m: Member - Leader |some msg: Msg | (broadcastInitialisation[Leader, msg] and eventually broadcastTermination[m, msg]) )
+/*     eventually ( #Member = 3 &&
+    eventually (some msg: Msg | (broadcastInitialisation[Leader, msg]
+     and eventually #msg.rcvrs = 2) )
 
-    )
-    /* eventually (some sm: SendingMsg |
-    eventually MessageRedirect[m1, sm])) */
+    ) */
+    some msg: Msg | eventually (#msg.rcvrs = 2 
+    and eventually msg in SentMsg)
 }
 
 
 
 run {
     trace2[]
-} for 5
+} for 3 Node, 1 Msg, 10 steps
 
 
 /* pred trace2[]{
@@ -423,8 +427,8 @@ pred trace5[]{
     eventually leaderPromotion[l,m1])
     )
 }
-run{
+/* run{
     trace5[]
-}for 5
+}for 5 */
 
 
