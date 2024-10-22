@@ -137,10 +137,11 @@ pred memberPromotion[m:Member, n:Node]{
 pred memberExit[m:Member]{ //not working properly
     //Preconditons
     m not in Leader //member isnt the leader
-    one l:Leader | m not in LeaderqueueElements[l] // member not in the leaderqueuelements
-    no (m.qnxt) //member has no nodes in its queue
-    no m.outbox //all its messages are sent
-    one (m.~nxt) //member is part of the ring
+    m not in LeaderqueueElements[Leader] // member not in the leaderqueuelements
+    no (MemberqueueElements[m])
+    some sndr.m implies all m: sndr.m | m in SentMsg
+    no (m.outbox)
+    one (m.nxt) //member is part of the ring
 
     //Postconditions
 
@@ -351,18 +352,39 @@ some msg: Msg | eventually (#msg.rcvrs = 2
     and eventually msg in SentMsg)
 }
 
-pred h[]{
-    eventually( #Member = 2 and 
-    some m1:Member - Leader | eventually (#MemberqueueElements[m1] = 3 and 
-    eventually /* ( */(#LeaderqueueElements[Leader] = 1 and
-    eventually #LeaderqueueElements[Leader] = 0))) /* and 
-    eventually ))) */
+pred h[] {
+    // #Node = 5                  // (1) Exactly 5 nodes
+    // #Member > 2                // More than 2 members (since we need at least one member promotion and exit)
+    
+    // // (2) One leader promotion must occur
+  
 
+    // (4) One member exit must occur
+    eventually( #Member = 3 and
+    some m: Member - Leader | 
+        eventually memberExit[m] and some m: Member | 
+        eventually leaderPromotion[Leader, m])
+    
+    // // (5) One non-member exit must occur
+    // some m: Member, n: Node |
+    //     eventually nonMemberExit[m, n]
+    
+    // // (6) One complete message broadcast
+    // some l: Leader, m: Msg | eventually (
+    //     // Broadcast initialization (pending -> sending)
+    //     broadcastInitialisation[l, m]
+    //     and 
+    //     // Message redirected (sending -> sending)
+    //     some m2: Member | eventually MessageRedirect[m2, m]
+    //     and
+    //     // Broadcast termination (sending -> sent)
+    //     some m3: Member | eventually broadcastTermination[m3, m]
+    // )
 }
 
 run {
     h[]
-} for 5
+} for 5 Node, 1 Msg
 
 
 run {
