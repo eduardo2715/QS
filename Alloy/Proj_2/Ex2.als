@@ -117,8 +117,8 @@ pred memberPromotion[m:Member, n:Node]{
 
     //Frame conditions
     all m2 : Member' - m | m2.qnxt' = m2.qnxt
-stutterMessage[]
-   stutterLeader[] 
+    stutterMessage[]
+    stutterLeader[] 
 }
 
 pred memberExit[m:Member]{ //not working properly
@@ -135,10 +135,9 @@ pred memberExit[m:Member]{ //not working properly
     nxt' = nxt - ((m.~nxt) -> m) - (m -> m.nxt) + ((m.~nxt) -> m.nxt)
 
     //Frame conditions
-    qnxt' = qnxt
-    lnxt' = lnxt
-    Leader' = Leader
-    Msg' = Msg
+    stutterMessage[]
+    stutterLeader[]
+    stutterMember[]
 
 }
 
@@ -152,11 +151,10 @@ pred nonMemberExit[m: Member, n: Node] { //currenty only removing the last membe
     m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt))
 
     // Frame conditions
-    lnxt' = lnxt
-    nxt' = nxt
-    Member' = Member
-    Leader' = Leader
-    Msg' = Msg
+    all m2 : Member' - m | m2.qnxt' = m2.qnxt
+    stutterRing[]
+    stutterLeader[]
+    stutterMessage[]
 }
 
 pred leaderApplication[l: Leader, m: Member] {
@@ -208,6 +206,7 @@ pred broadcastInitialisation[l: Leader]{
     //Pre conditions
     some l.outbox
     some l.nxt
+    l.nxt != l
 
     //Post conditions
     some m: Msg | m in l.outbox implies l.outbox' = l.outbox - m &&
@@ -229,7 +228,7 @@ pred MessageRedirect[m:Member,ms: SendingMsg]{
     m.nxt != Leader
 
     //Post conditions
-    ms.rcvrs' = m.rcvrs + m.nxt
+    ms.rcvrs' = ms.rcvrs + m.nxt
     m.outbox' = m.outbox - ms
     m.nxt.outbox' = m.nxt.outbox + ms
 
@@ -271,6 +270,10 @@ pred trans[] {
     (some l: Leader | some m: Member |  leaderApplication[l, m])
     or 
     (some l: Leader | some m: Member  | leaderPromotion[l,m])
+    or 
+    (some l: Leader | broadcastInitialisation[l])
+    or 
+    (some m: Member | some sm: SendingMsg | MessageRedirect[m, sm])
 }
 
 pred system[]{
@@ -304,6 +307,19 @@ pred trace1[] {
 
 run {
     trace1[]
+} for 5
+
+
+pred trace2[] {
+    eventually (some m1:Member - Leader | 
+    eventually (some sm: SendingMsg |
+    eventually MessageRedirect[m1, sm]))
+}
+
+
+
+run {
+    trace2[]
 } for 5
 
 
@@ -377,3 +393,5 @@ pred trace5[]{
 run{
     trace5[]
 }for 5
+
+
