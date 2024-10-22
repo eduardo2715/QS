@@ -48,9 +48,10 @@ fact MQueueTermination {
 // all members that are Lqueue are in the leader queue
 // all elements inside Leader queue must be non-Leader members (no nodes that are not members and no leaders)
 fact LQueueTermination {
+    // all m : Member | m in LeaderqueueElements[Leader] iff m in LQueue && m in LQueue iff m in LeaderqueueElements[Leader]
+    no(LeaderqueueElements[Leader] & (Leader + (Node - LQueue)))
     all q: LQueue, l: Leader | q in LeaderqueueElements[l]
-    all l: Leader | no(LeaderqueueElements[l] & (Leader + (Node - LQueue)))
-    all l: Leader |Leader in l.*(~(l.lnxt))
+    all m: Member | some m.(Leader.lnxt) implies Leader in m.^(Leader.lnxt) && lone m.~(Leader.lnxt) && one m.(Leader.lnxt)
 }
 
 // Each member/Leader must have at most 1 queue
