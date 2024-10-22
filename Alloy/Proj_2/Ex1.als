@@ -124,15 +124,13 @@ fact sentMessage{
 //leader queue must have more than one node
 run {
     #Leader = 1 && 
-    #Node > 5 &&
+    #Node >= 5 &&
      some m1, m2: Member, l: Leader |
         m1 != m2 &&
         some MemberQueueElements[m1] &&
-        #MemberQueueElements[m1] > 1 &&
         some MemberQueueElements[m2] &&
         some LeaderqueueElements[l] &&
-        #LeaderqueueElements[l] > 1 &&
-        #SentMsg > 1 &&
-        #SendingMsg = 1 &&
-        #PendingMsg > 1
+        #SentMsg > 0 &&
+        #SendingMsg > 0 &&
+        #PendingMsg > 0
 } for 7

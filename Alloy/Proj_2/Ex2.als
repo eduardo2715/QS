@@ -37,8 +37,12 @@ pred init[]{
     no qnxt
     no lnxt
     Member = Leader
-    Msg = PendingMsg
-}
+    no SendingMsg
+    no SentMsg
+    all m: Msg | m in PendingMsg
+    no rcvrs
+} 
+
 
 pred stutter[]{
     qnxt' = qnxt
@@ -48,6 +52,10 @@ pred stutter[]{
     Leader' = Leader
     Msg' = Msg
     LQueue' = LQueue
+    PendingMsg' = PendingMsg
+    SentMsg' = SentMsg
+    SendingMsg' = SendingMsg
+    rcvrs' = rcvrs
 }
 
 pred stutterMessage[]{
@@ -55,6 +63,9 @@ pred stutterMessage[]{
     rcvrs' = rcvrs
     sndr' = sndr
     outbox' = outbox
+    PendingMsg' = PendingMsg
+    SentMsg' = SentMsg
+    SendingMsg' = SendingMsg
 }
 pred stutterLeader[]{
     Leader' = Leader
@@ -189,8 +200,8 @@ pred leaderPromotion[l:Leader, m:Member]{
     (m -> l) in l.lnxt //the node is the first in line to become member
     m in Member - Leader //node isnt a member
     m in LeaderqueueElements[l] //node is in the queue
-    no MemberqueueElements[l]
     no l.outbox
+    sndr.Leader in SentMsg
 
     //Postconditions
     m.lnxt' = l.lnxt - (m->l)
@@ -202,40 +213,50 @@ pred leaderPromotion[l:Leader, m:Member]{
     stutterMessage[]
 }
 
-pred broadcastInitialisation[l: Leader]{
+pred broadcastInitialisation[l: Leader, m: Msg]{
     //Pre conditions
-    some l.outbox
+    m in l.outbox
+    l in m.sndr 
     some l.nxt
     l.nxt != l
+    l.nxt in Member
+    m in PendingMsg
+    no m.rcvrs
 
     //Post conditions
-    some m: Msg | m in l.outbox implies l.outbox' = l.outbox - m &&
+     m in l.outbox implies l.outbox' = l.outbox - m &&
      l.nxt.outbox' = l.nxt.outbox + m &&
      m.rcvrs' = m.rcvrs + l.nxt &&
      PendingMsg' = PendingMsg - m &&
      SendingMsg' = m
 
-
     //Frame conditions
     stutterRing[]
     stutterMember[]
     stutterLeader[]
+    SentMsg' = SentMsg
+    all m2: Msg - m | m2.rcvrs' = m2.rcvrs
 }
 
-pred MessageRedirect[m:Member,ms: SendingMsg]{
+pred MessageRedirect[m:Member,msg: Msg]{
     //Pre conditions
-    ms in m.outbox
-    m.nxt != Leader
+    msg in m.outbox
+    msg in SendingMsg
+    m.nxt !in Leader
+    m.~nxt in msg.rcvrs
 
     //Post conditions
-    ms.rcvrs' = ms.rcvrs + m.nxt
-    m.outbox' = m.outbox - ms
-    m.nxt.outbox' = m.nxt.outbox + ms
+    msg.rcvrs' = msg.rcvrs + m.nxt
+    m.outbox' = m.outbox - msg
+    m.nxt.outbox' = m.nxt.outbox + msg
 
     //Frame conditions
     stutterRing[]
     stutterRing[]
     stutterLeader[]
+    PendingMsg ' =  PendingMsg
+    SentMsg' = SentMsg
+    SendingMsg' = SendingMsg
 }
 
 pred broadcastTermination[m:Member,msg: Msg]{
@@ -243,17 +264,19 @@ pred broadcastTermination[m:Member,msg: Msg]{
     msg in m.outbox
     msg in SendingMsg
     m.nxt = Leader
-
+    m != Leader
     //Post conditions
     m.outbox' = m.outbox - msg
-    SentMsg' =  SentMsg + Msg
-    SendingMsg' = SendingMsg - msg
+    msg.rcvrs' = msg.rcvrs
 
 
     //Frame conditions
     stutterRing[]
     stutterRing[]
     stutterLeader[]
+    SentMsg' =  SentMsg + msg
+    SendingMsg' = SendingMsg - msg
+    PendingMsg' = PendingMsg
 }
 
 pred trans[] {
@@ -271,9 +294,12 @@ pred trans[] {
     or 
     (some l: Leader | some m: Member  | leaderPromotion[l,m])
     or 
-    (some l: Leader | broadcastInitialisation[l])
+    (some l: Leader, m: Msg | broadcastInitialisation[l,m])
     or 
     (some m: Member | some sm: SendingMsg | MessageRedirect[m, sm])
+    or
+    (some m: Member - Leader, msg: Msg | broadcastTermination[m,msg])
+    
 }
 
 pred system[]{
@@ -303,17 +329,24 @@ pred trace1[] {
     )
 }
 
+pred trace3[]{
+    eventually (some m: Member| #Leader.lnxt > 1 and leaderPromotion[Leader,m])
+}
+
 
 
 run {
-    trace1[]
-} for 5
+    trace3[]
+} for exactly 3 Node, 0 Msg, 10 steps
 
 
 pred trace2[] {
-    eventually (some m1:Member - Leader | 
-    eventually (some sm: SendingMsg |
-    eventually MessageRedirect[m1, sm]))
+    eventually (#Member = 3 &&
+    eventually (some m: Member - Leader |some msg: Msg | (broadcastInitialisation[Leader, msg] and eventually broadcastTermination[m, msg]) )
+
+    )
+    /* eventually (some sm: SendingMsg |
+    eventually MessageRedirect[m1, sm])) */
 }
 
 
