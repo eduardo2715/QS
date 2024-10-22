@@ -353,38 +353,23 @@ some msg: Msg | eventually (#msg.rcvrs = 2
 }
 
 pred h[] {
-    // #Node = 5                  // (1) Exactly 5 nodes
-    // #Member > 2                // More than 2 members (since we need at least one member promotion and exit)
-    
-    // // (2) One leader promotion must occur
-  
-
-    // (4) One member exit must occur
-    eventually( #Member = 3 and
-    some m: Member - Leader | 
-        eventually memberExit[m] and some m: Member | 
-        eventually leaderPromotion[Leader, m])
-    
-    // // (5) One non-member exit must occur
-    // some m: Member, n: Node |
-    //     eventually nonMemberExit[m, n]
-    
-    // // (6) One complete message broadcast
-    // some l: Leader, m: Msg | eventually (
-    //     // Broadcast initialization (pending -> sending)
-    //     broadcastInitialisation[l, m]
-    //     and 
-    //     // Message redirected (sending -> sending)
-    //     some m2: Member | eventually MessageRedirect[m2, m]
-    //     and
-    //     // Broadcast termination (sending -> sent)
-    //     some m3: Member | eventually broadcastTermination[m3, m]
-    // )
+    eventually( #Member = 3 and  //member aplication + memeber promotion
+        some msg :Msg| 
+        eventually (#msg.rcvrs = 2 //broadcast initialisation + Message redirect
+         and
+        eventually (#SentMsg = 1 //broadcast termination
+        and
+        eventually (some m1: Member - Leader | leaderPromotion[Leader, m1] //leader application + leader promotion
+        and
+        eventually (some m2: Member - Leader | memberExit[m2] //member exit
+        and 
+        eventually (some n1: Node - Member , m3 : Member| (memberApplication[m3,n1]
+                                                        and eventually nonMemberExit[m3, n1]))))))) // non-member exit
 }
 
 run {
     h[]
-} for 5 Node, 1 Msg
+} for 5 Node, 1 Msg, 12 steps
 
 
 run {
