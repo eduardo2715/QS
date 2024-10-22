@@ -33,15 +33,15 @@ fun LeaderqueueElements[l: Leader]:set Member{
 }
 
 pred init[]{
-    all n:Node | n.outbox = PendingMsg
     no qnxt
     no lnxt
     Member = Leader
     no SendingMsg
     no SentMsg
-    all m: Msg | m in PendingMsg
+    all m: Msg | m in PendingMsg 
+    && #outbox.m = 1 and m in m.sndr.outbox
     no rcvrs
-    all n : Node | some n.outbox implies all msg : n.outbox | msg.sndr = n
+    
 }
 
 
@@ -57,6 +57,7 @@ pred stutter[]{
     SentMsg' = SentMsg
     SendingMsg' = SendingMsg
     rcvrs' = rcvrs
+    outbox' = outbox
 }
 
 pred stutterMessage[]{
@@ -245,7 +246,7 @@ pred MessageRedirect[m:Member,msg: Msg]{
     msg in m.outbox
     msg in SendingMsg
     m.nxt !in Leader
-    m.~nxt in msg.rcvrs
+    // m.~nxt != Leader implies m in msg.rcvrs
 
     //Post conditions
     msg.rcvrs' = msg.rcvrs + m.nxt
@@ -253,7 +254,6 @@ pred MessageRedirect[m:Member,msg: Msg]{
     m.nxt.outbox' = m.nxt.outbox + msg
 
     //Frame conditions
-    stutterRing[]
     stutterRing[]
     stutterLeader[]
     stutterMember[]
@@ -276,7 +276,6 @@ pred broadcastTermination[m:Member,msg: Msg]{
 
 
     //Frame conditions
-    stutterRing[]
     stutterRing[]
     stutterLeader[]
     stutterMember[]
@@ -348,9 +347,8 @@ pred trace3[]{
 
 
 pred trace2[] {
-    some msg: Msg | eventually (#msg.rcvrs = 2
-    and eventually /* ( */msg in SentMsg /* and
-    some m : Member | eventually #MemberqueueElements[m] = 1) */)
+some msg: Msg | eventually (#msg.rcvrs = 2
+    and eventually msg in SentMsg)
 }
 
 pred h[]{
@@ -369,7 +367,7 @@ run {
 
 run {
     trace2[]
-} for 5 Node, 1 Msg, 10 steps
+} for 3 Node, 1 Msg, 10 steps
 
 
 /* pred trace2[]{
