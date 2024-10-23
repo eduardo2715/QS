@@ -137,7 +137,7 @@ pred memberExit[m:Member]{ //not working properly
     m not in Leader //member isn't the leader
     m not in LeaderqueueElements[Leader] // member not in the leader queue elements
     no (MemberqueueElements[m]) //member cant have a member queue
-    some sndr.m implies all msg: sndr.m | msg in SentMsg //FIXME: ??????????
+    some sndr.m implies all m: sndr.m | m in SentMsg //FIXME: ??????????
     no (m.outbox) //FIXME: can the member have pending messages or no messages
     one (m.nxt) //member is part of the ring
 
@@ -178,9 +178,6 @@ pred leaderApplicationAux[l: Leader, m1: Member, m2: Member] {
     m1 != m2                                // m1 and m2 must be different (no self-pointing)
     m1 in Member - Leader                     // m1 must not be a Leader
     m1 not in LeaderqueueElements[l]         // m1 should not already be in the member's queue
-    // all q: LQueue | q in LeaderqueueElements[Leader] implies all m: Member | m in LeaderqueueElements[Leader] implies m in LQueue
-    
-    LQueue = LeaderqueueElements[Leader]
     
     #LeaderqueueElements[l] = 0 implies m2 = l // If the queue is empty, m2 should be the leader itself (m1 will point to the leader)
     
@@ -220,7 +217,9 @@ pred broadcastInitialisation[l: Leader, m: Msg]{
     //Pre conditions
     m in l.outbox //message must be in the leader outbox
     l in m.sndr //leader must be the message sender
+    some l.nxt //TODO: remove
     l.nxt != l //next member in the ring cannot be the leader
+    l.nxt in Member //TODO: remove
     m in PendingMsg //message must be in a pending state
     no m.rcvrs //message cannot have receivers
 
@@ -237,7 +236,7 @@ pred broadcastInitialisation[l: Leader, m: Msg]{
     stutterLeader[]
     SentMsg' = SentMsg
     all m2: Msg - m | m2.rcvrs' = m2.rcvrs
-    all m3 : Member - Leader - Leader.nxt | m3.outbox' = m3.outbox
+    all m3 : Node - Leader - Leader.nxt | m3.outbox' = m3.outbox
 }
 
 pred MessageRedirect[m:Member,msg: Msg]{
@@ -258,7 +257,7 @@ pred MessageRedirect[m:Member,msg: Msg]{
     PendingMsg ' =  PendingMsg
     SentMsg' = SentMsg
     SendingMsg' = SendingMsg
-    all m3 : Member - m - m.nxt | m3.outbox' = m3.outbox
+    all m3 : Node - m - m.nxt | m3.outbox' = m3.outbox
 }
 
 pred broadcastTermination[m:Member,msg: Msg]{
@@ -278,8 +277,8 @@ pred broadcastTermination[m:Member,msg: Msg]{
     SentMsg' =  SentMsg + msg
     SendingMsg' = SendingMsg - msg
     PendingMsg' = PendingMsg
-    all m3 : Member - m | m3.outbox' = m3.outbox
-    msg.rcvrs' = msg.rcvrs 
+    all m3 : Node - m | m3.outbox' = m3.outbox
+    rcvrs' = rcvrs
     msg.sndr' = msg.sndr
 }
 
@@ -334,9 +333,9 @@ fact OneQueuePerNode{ //this might not be needed
 
 
 //TODO: not working, integrate this in leader application pre-condition
-// fact{
-//     all q: LQueue, l: Leader | q in LeaderqueueElements[l]
-// }
+fact{
+    all q: LQueue, l: Leader | q in LeaderqueueElements[l]
+}
 
 // NETWORK CONFIGURATION
 pred h[] {

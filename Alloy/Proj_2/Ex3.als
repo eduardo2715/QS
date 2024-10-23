@@ -236,7 +236,7 @@ pred broadcastInitialisation[l: Leader, m: Msg]{
     stutterLeader[]
     SentMsg' = SentMsg
     all m2: Msg - m | m2.rcvrs' = m2.rcvrs
-    all m3 : Member - Leader - Leader.nxt | m3.outbox' = m3.outbox
+    all m3 : Node - Leader - Leader.nxt | m3.outbox' = m3.outbox
 }
 
 pred MessageRedirect[m:Member,msg: Msg]{
@@ -257,7 +257,7 @@ pred MessageRedirect[m:Member,msg: Msg]{
     PendingMsg ' =  PendingMsg
     SentMsg' = SentMsg
     SendingMsg' = SendingMsg
-    all m3 : Member - m - m.nxt | m3.outbox' = m3.outbox
+    all m3 : Node - m - m.nxt | m3.outbox' = m3.outbox
 }
 
 pred broadcastTermination[m:Member,msg: Msg]{
@@ -277,8 +277,8 @@ pred broadcastTermination[m:Member,msg: Msg]{
     SentMsg' =  SentMsg + msg
     SendingMsg' = SendingMsg - msg
     PendingMsg' = PendingMsg
-    all m3 : Member - m | m3.outbox' = m3.outbox
-    msg.rcvrs' = msg.rcvrs 
+    all m3 : Node - m | m3.outbox' = m3.outbox
+    rcvrs' = rcvrs
     msg.sndr' = msg.sndr
 }
 
@@ -333,9 +333,9 @@ fact OneQueuePerNode{ //this might not be needed
 
 
 //TODO: not working, integrate this in leader application pre-condition
-fact{
+/* fact{
     all q: LQueue, l: Leader | q in LeaderqueueElements[l]
-}
+} */
 
 
 pred ValidTopology{
@@ -377,14 +377,27 @@ pred ValidMessage{
 }
 
 pred fairness{
-    all n: Node - Member | some m: Member | {
-        eventually n in MemberqueueElements[m] implies
+
+    all n: Node - Member | some m: Member {
+        always eventually n in MemberqueueElements[m] implies
         eventually n in Member implies
-        eventually n = Leader implies
-        eventually always (all msg:sndr.n | m in SentMsg) 
+        always eventually n in LeaderqueueElements[Leader] implies
+        eventually some SendingMsg implies
+        eventually always some SentMsg implies
+        always eventually no (Leader.outbox) implies
+        eventually n !in LeaderqueueElements[Leader] 
     }
 }
 
+pred noExits{
+    always no m: Member - Leader | memberExit[m]
+    and
+    always (no n: Node - Member | some m: Member | nonMemberExit[m, n])
+}
+
+check {
+    fairness[]
+    }
 
 //3.1
 check {ValidTopology[]}
@@ -392,3 +405,6 @@ check {ValidMessage[]}
 
 //3.2
 
+run{
+    fairness[] and noExits[]
+}for 2 Node, 2 Msg
