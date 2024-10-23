@@ -20,7 +20,7 @@ sig Msg {
 
 var sig SentMsg, SendingMsg, PendingMsg in Msg {}
 
-// Fact to enforce the ring topology for the members
+// Members form a ring with each member pointing to another member (or itself);
 fact RingTopology {
     all m:Member | m.(^nxt) = Member
 }
@@ -94,22 +94,22 @@ pred memberApplicationAux[m: Member, n1: Node, n2: Node] {
     n1 in Node - Member                     // n1 must not already be a Member
     n1 not in MemberqueueElements[m]         // n1 should not already be in the member's queue
 
-    // If the queue is empty, n2 should be the member itself (n1 will point to the member)
-    #MemberqueueElements[m] = 0 implies n2 = m
-    // If the queue is not empty, n2 must be the last node in the queue
-    #MemberqueueElements[m] > 0 implies {
+    
+    #MemberqueueElements[m] = 0 implies n2 = m // If the queue is empty, n2 should be the member itself (n1 will point to the member)
+    
+    #MemberqueueElements[m] > 0 implies { // If the queue is not empty, n2 must be the last node in the queue
         n2 in MemberqueueElements[m]          // n2 is a node in the queue
         no n0: Node | (n0 -> n2) in m.qnxt    // n2 should not point to any other node (last in the queue)
     }
 
     // Postconditions
-    m.qnxt' = (n1 -> n2) + m.qnxt             // Add the new connection (n1 -> n2)
-    all m2 : Member' - m | m2.qnxt' = m2.qnxt
-    //some n: Node | n != m && n in MemberqueueElements[m] implies (n -> m) in m.qnxt'
+    m.qnxt' = (n1 -> n2) + m.qnxt             //add the member to the queue, Add the new connection (n1 -> n2)
+    
     // Frame conditions
     stutterLeader[]
     stutterMessage[]
     stutterRing[]
+    all m2 : Member' - m | m2.qnxt' = m2.qnxt 
 }
 
 
@@ -122,11 +122,9 @@ pred memberPromotion[m:Member, n:Node]{
 
 
     //Postconditions
-    nxt' = nxt - (m->m.nxt) + (m->n) + (n->m.nxt) // member now points to newly appointed node
-    // (some n.(m.qnxt)) implies (m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt)))
-    // no(n.(m.qnxt)) implies m.qnxt' = m.qnxt - (~(m.qnxt)[n] -> n)
-    m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt))
-    Member' = Member + n //node becomes a member
+    nxt' = nxt - (m->m.nxt) + (m->n) + (n->m.nxt) //add the member to the ring, member now points to newly appointed node
+    m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt)) //remove node from the queue, remove links (n->next) and (prev->n) add link (prev -> next)
+    Member' = Member + n //node becomes a Member
 
     //Frame conditions
     all m2 : Member' - m | m2.qnxt' = m2.qnxt
@@ -136,17 +134,17 @@ pred memberPromotion[m:Member, n:Node]{
 
 pred memberExit[m:Member]{ //not working properly
     //Preconditons
-    m not in Leader //member isnt the leader
-    m not in LeaderqueueElements[Leader] // member not in the leaderqueuelements
-    no (MemberqueueElements[m])
-    some sndr.m implies all m: sndr.m | m in SentMsg
-    no (m.outbox)
+    m not in Leader //member isn't the leader
+    m not in LeaderqueueElements[Leader] // member not in the leader queue elements
+    no (MemberqueueElements[m]) //member cant have a member queue
+    some sndr.m implies all m: sndr.m | m in SentMsg //FIXME: ??????????
+    no (m.outbox) //FIXME: can the member have pending messages or no messages
     one (m.nxt) //member is part of the ring
 
     //Postconditions
 
-    Member' = Member - m
-    nxt' = nxt - ((m.~nxt) -> m) - (m -> m.nxt) + ((m.~nxt) -> m.nxt)
+    Member' = Member - m // remove member(m) from Members
+    nxt' = nxt - ((m.~nxt) -> m) - (m -> m.nxt) + ((m.~nxt) -> m.nxt) //remove members from the ring, remove link (prev -> m) and (m -> next) add link (prev -> next)
 
     //Frame conditions
     stutterMessage[]
@@ -155,14 +153,13 @@ pred memberExit[m:Member]{ //not working properly
 
 }
 
-pred nonMemberExit[m: Member, n: Node] { //currenty only removing the last member from the queue (?)
+pred nonMemberExit[m: Member, n: Node] {
     // Preconditions
     n not in Member                        // n isn't a member
     n in MemberqueueElements[m]            // n is in m's queue
 
     //Postconditions
-    //some m: Member | n in MemberqueueElements[m] implies n' not in MemberqueueElements[m'] && 
-    m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt))
+    m.qnxt' = m.qnxt - (n -> n.(m.qnxt)) - (~(m.qnxt)[n] -> n) + (~(m.qnxt)[n] -> n.(m.qnxt)) //remove node from the queue, remove links (n->next) and (prev->n) add link (prev -> next)
 
     // Frame conditions
     all m2 : Member' - m | m2.qnxt' = m2.qnxt
@@ -177,20 +174,20 @@ pred leaderApplication[l: Leader, m: Member] {
 
 pred leaderApplicationAux[l: Leader, m1: Member, m2: Member] {
     // Preconditions
-    (m1 -> m2) !in l.lnxt                   // n1 should not already point to n2 in l's queue
-    m1 != m2                                // n1 and n2 must be different (no self-pointing)
-    m1 in Member - Leader                     // n1 must not already be a Leader
-    m1 not in LeaderqueueElements[l]         // n1 should not already be in the member's queue
-    // If the queue is empty, n2 should be the member itself (n1 will point to the member)
-    #LeaderqueueElements[l] = 0 implies m2 = l
-    // If the queue is not empty, n2 must be the last node in the queue
-    #LeaderqueueElements[l] > 0 implies {
-        m2 in LeaderqueueElements[l]          // n2 is a node in the queue
-        no m0: Member | (m0 -> m2) in l.lnxt    // n2 should not point to any other node (last in the queue)
+    (m1 -> m2) !in l.lnxt                   // m1 should not already point to m2 in l's queue
+    m1 != m2                                // m1 and m2 must be different (no self-pointing)
+    m1 in Member - Leader                     // m1 must not be a Leader
+    m1 not in LeaderqueueElements[l]         // m1 should not already be in the member's queue
+    
+    #LeaderqueueElements[l] = 0 implies m2 = l // If the queue is empty, m2 should be the leader itself (m1 will point to the leader)
+    
+    #LeaderqueueElements[l] > 0 implies { // If the queue is not empty, m2 must be the last node in the queue
+        m2 in LeaderqueueElements[l]          // m2 is a Member in the leader queue
+        no m0: Member | (m0 -> m2) in l.lnxt    // m2 should not point to any other member (last in the queue)
     }
 
     // Postconditions
-    l.lnxt' = (m1 -> m2) + l.lnxt             // Add the new connection (n1 -> n2)
+    l.lnxt' = (m1 -> m2) + l.lnxt             // Add the new connection (m1 -> m2)
 
     // Frame conditions
     stutterRing[]
@@ -201,13 +198,13 @@ pred leaderApplicationAux[l: Leader, m1: Member, m2: Member] {
 pred leaderPromotion[l:Leader, m:Member]{
     //Preconditions
     (m -> l) in l.lnxt //the node is the first in line to become member
-    m in Member - Leader //node isnt a member
-    m in LeaderqueueElements[l] //node is in the queue
-    no l.outbox
-    sndr.Leader in SentMsg
+    m in Member - Leader //member is not a leader
+    m in LeaderqueueElements[l] //node is in the leader queue elements
+    no l.outbox //FIXME: is this correct? Leader can have pending messages no?
+    sndr.Leader in SentMsg //the leader has no sending message
 
     //Postconditions
-    m.lnxt' = l.lnxt - (m->l)
+    m.lnxt' = l.lnxt - (m->l) //remove leader queue link from the member to the leader
     Leader' = m //node becomes a member
 
     //Frame conditions
@@ -218,20 +215,20 @@ pred leaderPromotion[l:Leader, m:Member]{
 
 pred broadcastInitialisation[l: Leader, m: Msg]{
     //Pre conditions
-    m in l.outbox
-    l in m.sndr 
-    some l.nxt
-    l.nxt != l
-    l.nxt in Member
-    m in PendingMsg
-    no m.rcvrs
+    m in l.outbox //message must be in the leader outbox
+    l in m.sndr //leader must be the message sender
+    some l.nxt //TODO: remove
+    l.nxt != l //next member in the ring cannot be the leader
+    l.nxt in Member //TODO: remove
+    m in PendingMsg //message must be in a pending state
+    no m.rcvrs //message cannot have receivers
 
     //Post conditions
-     m in l.outbox implies l.outbox' = l.outbox - m &&
-     l.nxt.outbox' = l.nxt.outbox + m &&
-     m.rcvrs' = m.rcvrs + l.nxt &&
-     PendingMsg' = PendingMsg - m &&
-     SendingMsg' = m
+     m in l.outbox implies l.outbox' = l.outbox - m && //remove message from leader outbox
+     l.nxt.outbox' = l.nxt.outbox + m && //add message to the next ring member outbox
+     m.rcvrs' = m.rcvrs + l.nxt && //add the next ring member to the message receivers
+     PendingMsg' = PendingMsg - m && //message is no longer pending
+     SendingMsg' = m //message is now sending
 
     //Frame conditions
     stutterRing[]
@@ -244,15 +241,14 @@ pred broadcastInitialisation[l: Leader, m: Msg]{
 
 pred MessageRedirect[m:Member,msg: Msg]{
     //Pre conditions
-    msg in m.outbox
-    msg in SendingMsg
-    m.nxt !in Leader
-    // m.~nxt != Leader implies m in msg.rcvrs
+    msg in m.outbox  //message must be in the member outbox
+    msg in SendingMsg  //message must be in a sending state
+    m.nxt !in Leader //next member in the ring cannot be the leader
 
     //Post conditions
-    msg.rcvrs' = msg.rcvrs + m.nxt
-    m.outbox' = m.outbox - msg
-    m.nxt.outbox' = m.nxt.outbox + msg
+    msg.rcvrs' = msg.rcvrs + m.nxt //add next ring member to the message receivers
+    m.outbox' = m.outbox - msg //remove message from the member outbox
+    m.nxt.outbox' = m.nxt.outbox + msg //add the message to the next ring member outbox
 
     //Frame conditions
     stutterRing[]
@@ -266,15 +262,13 @@ pred MessageRedirect[m:Member,msg: Msg]{
 
 pred broadcastTermination[m:Member,msg: Msg]{
     //Pre conditions
-    msg in m.outbox
-    msg in SendingMsg
-    m in msg.rcvrs
-    m.nxt = Leader
-    m != Leader
+    msg in m.outbox  //message must be in the member outbox
+    msg in SendingMsg  //message must be in a sending state
+    m in msg.rcvrs //member must be in the message receivers
+    m.nxt = Leader //next member in the ring must be the leader
+    m != Leader //member cannot be the leader
     //Post conditions
-    m.outbox' = m.outbox - msg
-    msg.rcvrs' = msg.rcvrs
-
+    m.outbox' = m.outbox - msg //remove message from the member outbox
 
     //Frame conditions
     stutterRing[]
@@ -284,6 +278,8 @@ pred broadcastTermination[m:Member,msg: Msg]{
     SendingMsg' = SendingMsg - msg
     PendingMsg' = PendingMsg
     all m3 : Member - m | m3.outbox' = m3.outbox
+    msg.rcvrs' = msg.rcvrs 
+    msg.sndr' = msg.sndr
 }
 
 pred trans[] {
@@ -315,10 +311,12 @@ pred system[]{
     always trans[]
 }
 
+// Helper function to visualize the member queues
 fun VisualizeMemberQueues[]: Node -> lone Node {
     Member.qnxt
 }
 
+// Helper function to visualize the leader queues
 fun VisualizeLeaderQueues[]: Node -> lone Node {
     Leader.lnxt
 }
@@ -327,30 +325,33 @@ fact{
     system[]
 }
 
-
-//TESTING
-fact OneQueuePerNode{
+// Each member/Leader must have at most 1 queue
+fact OneQueuePerNode{ //this might not be needed
     all m: Member | #((m.qnxt)).m <= 1
     all l: Leader | #((l.lnxt)).l <= 1
 }
 
+
+//TODO: not working, integrate this in leader application pre-condition
 fact{
     all q: LQueue, l: Leader | q in LeaderqueueElements[l]
 }
 
+// NETWORK CONFIGURATION
 pred h[] {
-    eventually( #Member = 3 and  //member aplication + memeber promotion
-        some msg :Msg| 
-        eventually (#msg.rcvrs = 2 //broadcast initialisation + Message redirect
-         and
-        eventually (#SentMsg = 1 //broadcast termination
-        and
-        eventually (some m1: Member - Leader | leaderPromotion[Leader, m1] //leader application + leader promotion
-        and
-        eventually (some m2: Member - Leader | memberExit[m2] //member exit
-        and 
-        eventually (some n1: Node - Member , m3 : Member| (memberApplication[m3,n1]
-                                                        and eventually nonMemberExit[m3, n1]))))))) // non-member exit
+    eventually ( #Member = 3   //member application + member promotion
+    and
+    eventually (some msg :Msg| #msg.rcvrs = 2 //broadcast initialisation + Message redirect
+    and
+    eventually (#SentMsg = 1 //broadcast termination
+    and
+    eventually (some m1: Member - Leader | leaderPromotion[Leader, m1] //leader application + leader promotion
+    and
+    eventually (some m2: Member - Leader | memberExit[m2] //member exit
+    and 
+    eventually (some n1: Node - Member , m3 : Member| (memberApplication[m3,n1]
+    and 
+    eventually nonMemberExit[m3, n1]))))))) // non-member exit
 }
 
 run { //takes about 5:30 minutes to run but works :)
