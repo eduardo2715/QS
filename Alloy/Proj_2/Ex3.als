@@ -338,7 +338,7 @@ fact{
 }
 
 
-assert ValidTopology{
+pred ValidTopology{
     all m:Member | m.(^nxt) = Member
 
     all m1,m2: Member | m1 != m2 implies no (MemberqueueElements[m1] & MemberqueueElements[m2])
@@ -354,7 +354,7 @@ assert ValidTopology{
     all l: Leader | #((l.lnxt)).l <= 1
 }
 
-assert ValidMessage{
+pred ValidMessage{
     all msg:Msg | no (msg.rcvrs & msg.sndr)
 
     all msg:Msg | no (msg.rcvrs & (Node - Member))
@@ -376,9 +376,19 @@ assert ValidMessage{
 
 }
 
+pred fairness{
+    all n: Node - Member | some m: Member | {
+        eventually n in MemberqueueElements[m] implies
+        eventually n in Member implies
+        eventually n = Leader implies
+        eventually always (all msg:sndr.n | m in SentMsg) 
+    }
+}
+
+
 //3.1
-check ValidTopology
-check ValidMessage
+check {ValidTopology[]}
+check {ValidMessage[]}
 
 //3.2
 
