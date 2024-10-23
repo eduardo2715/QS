@@ -22,35 +22,36 @@ sig SentMsg, SendingMsg, PendingMsg in Msg {}
 
 //// TOPOLOGICAL CONSTRAINTS
 
-// members form a ring with each member pointing to another member (or itself);
+// Members form a ring with each member pointing to another member (or itself);
 fact RingTopology {
     all m:Member | m.(^nxt) = Member
 }
 
-// function that returns the set of elements that are in the Member queue of a given member 
+// Function that returns the set of elements that are in the Member queue of a given member 
 fun MemberQueueElements[m: Member]:set Node{
     m.^(~(m.qnxt))
 }
 
-// function that returns the set of elements that are in the Leader queue of a given leader
+// Function that returns the set of elements that are in the Leader queue of a given leader
 fun LeaderqueueElements[l: Leader]:set Member{
     l.^(~(l.lnxt))
 }
 
-//a node that belongs to a member queue cannot belong to another member queue
-// all elements inside Menber queue must be non-Member Nodes (no Members)
+// A node that belongs to a member queue cannot belong to another member queue
+// All elements inside Menber queue must be non-Member Nodes (no Members)
+// A member queue must terminate in the member
 fact MQueueTermination {
     all m1,m2: Member | m1 != m2 implies no (MemberQueueElements[m1] & MemberQueueElements[m2])
     all m: Member | no (Member & MemberQueueElements[m])
     all n: Node | all m: Member | some n.(m.qnxt) implies m in n.^(m.qnxt)
 }
 
-// all members that are Lqueue are in the leader queue
-// all elements inside Leader queue must be non-Leader members (no nodes that are not members and no leaders)
+// All members that are Lqueue are in the leader queue
+// All elements inside Leader queue must be LQMembers
+// Leader queue must end in the leader, each Leader queue member must point to exactly 1 other member an be pointed by at most 1 member 
 fact LQueueTermination {
-    // all m : Member | m in LeaderqueueElements[Leader] iff m in LQueue && m in LQueue iff m in LeaderqueueElements[Leader]
-    no(LeaderqueueElements[Leader] & (Leader + (Node - LQueue)))
     all q: LQueue, l: Leader | q in LeaderqueueElements[l]
+    no(LeaderqueueElements[Leader] & (Leader + (Node - LQueue)))
     all m: Member | some m.(Leader.lnxt) implies Leader in m.^(Leader.lnxt) && lone m.~(Leader.lnxt) && one m.(Leader.lnxt)
 }
 
@@ -72,57 +73,57 @@ fun VisualizeLeaderQueues[]: Node -> lone Node {
 
 //// MESSAGE-CONSISTENCY CONSTRAINTS
 
-
-
-//Only sending or sent messages have receivers
-//A sender cannot be in its receivers
+// A sender cannot be in its receivers
 fact receivers{
     all msg:Msg | no (msg.rcvrs & msg.sndr)
 }
 
+// Non-Members cannot be message receivers
 fact {
-    all msg:Msg | no (msg.sndr & (Node - Member))
     all msg:Msg | no (msg.rcvrs & (Node - Member))
-    all n:Node-Member | no(n.outbox)
 }
 
-//if a message is in a sending state it means that it must have receivers and it belongs to someones outbox
+// If a message is in a sending state it means that it must have receivers and it belongs to someones outbox
+// There can only be one or none sending message at each time
+// Only non-leader members can have sending messages in their outboxes
 fact sendingMessage{
     all msg:Msg | msg in SendingMsg implies some (msg.rcvrs) and some n:Node | msg in n.outbox
-    one SendingMsg
+    lone SendingMsg
     SendingMsg in (Member - Leader).outbox
-
 }
 
-//if a message is in a pending state it means that it must not have receivers and it belongs to the senders outbox
+// If a message is in a pending state it means that it must not have receivers and it belongs to the senders outbox
 fact pendingMessage{
     all msg: PendingMsg | no (msg.rcvrs)
     all msg: PendingMsg | msg in msg.sndr.outbox
 }
 
+// If a node has a message in its outbox that belongs to the leader than the node is a member and the node is in the rcvrs of that message
 fact outbox {
     all n: Node - Leader | 
-        all msg: Msg | msg in n.outbox and msg.sndr = Leader implies n in Member && n in msg.rcvrs
+    all msg: Msg | msg in n.outbox and msg.sndr = Leader implies n in Member && n in msg.rcvrs
 
 }
 
-fact nodesCantReceiveTheirOwnMessage {
-    all msg: Msg | no (msg.rcvrs & msg.sndr)
-}
-
-//if a message is in a sent state it means that it must have receivers and it belongs to the senders outbox
+// If a message is in a sent state it means that it must have receivers and it belongs to the senders outbox
 fact sentMessage{
-    // all msg:Msg | msg in SentMsg implies some (msg.rcvrs) and all n:Node | msg !in n.outbox
-     no (SentMsg & Member.outbox)
-     all msg: SentMsg | some msg.rcvrs
-     //received by someone
+    no (SentMsg & Member.outbox)
+    all msg: SentMsg | some msg.rcvrs
 }
 
-//THIS IS JUST FOR TESTING
-//Run the model with 5 nodes, 1 leader
-//at least 2 mambers
-//one of the members queue must have more than one node
-//leader queue must have more than one node
+//each message must belong to one of the three types (pending, sending, sent)
+fact MessageType{
+    all msg:Msg | msg in PendingMsg or msg in SendingMsg or msg in SentMsg
+}
+
+// NETWORK CONFIGURATION
+// 1 Leader
+// At least 5 Nodes
+// 2 non-empty member queues
+// 1 non-empty leader queue
+// at least on sent message
+// at least on sending message
+// at least on pending message
 run {
     #Leader = 1 && 
     #Node >= 5 &&
