@@ -338,21 +338,44 @@ fact{
     all q: LQueue, l: Leader | q in LeaderqueueElements[l]
 }
 
-pred h[] {
-    eventually( #Member = 3 and  //member aplication + memeber promotion
-        some msg :Msg| 
-        eventually (#msg.rcvrs = 2 //broadcast initialisation + Message redirect
-         and
-        eventually (#SentMsg = 1 //broadcast termination
-        and
-        eventually (some m1: Member - Leader | leaderPromotion[Leader, m1] //leader application + leader promotion
-        and
-        eventually (some m2: Member - Leader | memberExit[m2] //member exit
-        and 
-        eventually (some n1: Node - Member , m3 : Member| (memberApplication[m3,n1]
-                                                        and eventually nonMemberExit[m3, n1]))))))) // non-member exit
+
+assert ValidTopoligy{
+    all m:Member | m.(^nxt) = Member
+
+    all m1,m2: Member | m1 != m2 implies no (MemberqueueElements[m1] & MemberqueueElements[m2])
+    all m: Member | no (Member & MemberqueueElements[m])
+    all n: Node | all m: Member | some n.(m.qnxt) implies m in n.^(m.qnxt)
+
+
+    no(LeaderqueueElements[Leader] & (Leader + (Node - LQueue)))
+    all q: LQueue, l: Leader | q in LeaderqueueElements[l]
+    all m: Member | some m.(Leader.lnxt) implies Leader in m.^(Leader.lnxt) && lone m.~(Leader.lnxt) && one m.(Leader.lnxt)
+
+    all m: Member | #((m.qnxt)).m <= 1
+    all l: Leader | #((l.lnxt)).l <= 1
 }
 
-run { //takes about 5:30 minutes to run but works :)
-    h[]
-} for 5 Node, 1 Msg, 12 steps
+assert ValidMessage{
+    all msg:Msg | no (msg.rcvrs & msg.sndr)
+
+    all msg:Msg | no (msg.rcvrs & (Node - Member))
+
+    all msg:Msg | msg in SendingMsg implies some (msg.rcvrs) and some n:Node | msg in n.outbox
+    lone SendingMsg
+    SendingMsg in (Member - Leader).outbox
+
+    all msg: PendingMsg | no (msg.rcvrs)
+    all msg: PendingMsg | msg in msg.sndr.outbox
+
+    all n: Node - Leader | 
+    all msg: Msg | msg in n.outbox and msg.sndr = Leader implies n in Member && n in msg.rcvrs
+
+    no (SentMsg & Member.outbox)
+    all msg: SentMsg | some msg.rcvrs
+
+    all msg:Msg | msg in PendingMsg or msg in SendingMsg or msg in SentMsg
+
+}
+
+
+check ValidTopoligy
