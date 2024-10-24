@@ -392,16 +392,16 @@ pred noExits{
     always (no n: Node - Member | some m: Member | nonMemberExit[m, n])
 }
 
-/* check {
+check {
     fairness[]
-    } */
+    }
 
 //3.1
 check {ValidTopology[]}
-//check {ValidMessage[]}
+check {ValidMessage[]}
 
 //3.2
-/* 
+
 run{
     fairness[] and noExits[]
-}for 2 Node, 2 Msg */
+}for 2 Node, 2 Msg
