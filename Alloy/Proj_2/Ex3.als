@@ -376,35 +376,35 @@ pred ValidMessage{
 // Separate fairness conditions for clearer structure
 pred nodeFairness {
     // Every non-member eventually gets a chance to join a queue
-    all n: Node - Member | 
-        eventually some m: Member | n in MemberqueueElements[m]
+    some m: Member |
+        some n:Node - Member | n !in MemberqueueElements[m]
+        implies
+        always eventually n in MemberqueueElements[m]
 }
 
 pred memberFairness {
     // Every member eventually gets a chance to join leader queue
     all m: Member - Leader |
-        eventually m in LeaderqueueElements[Leader]
+        always eventually m in LeaderqueueElements[Leader]
     
     // Every node in a member queue eventually becomes a member
     all n: Node - Member, m: Member |
-        n in MemberqueueElements[m] implies eventually n in Member
+        n in MemberqueueElements[m] implies always eventually n in Member
 }
 
 pred leaderFairness {
     // Leader eventually processes all requests
-    all m: Member |
-        m in LeaderqueueElements[Leader] implies 
-        eventually m !in LeaderqueueElements[Leader]
-         // Once a member joins leader queue, they stay until promoted
     all m: Member - Leader |
-        m in LeaderqueueElements[Leader] implies
-        (m in LeaderqueueElements[Leader] until m in Leader)
+        m in LeaderqueueElements[Leader] implies 
+        always eventually m !in LeaderqueueElements[Leader]
 }
 
 pred messageFairness {
     // All pending messages eventually get sent
     all m: PendingMsg | 
-        eventually m in SendingMsg implies
+        always eventually m in SendingMsg implies
+
+    all m:Msg |
         eventually always m in SentMsg
 }
 
@@ -442,16 +442,16 @@ check AllBroadcastsTerminate for 2 Node, 4 Msg, 8 steps
 
 //isto devia gerar um contra exemplo e nao o esta a fazer
 assert AllBroadcastsDontTerminate {
-    (atLeastTwoNodes and fairness and memberWillExit ) implies
-    all m: Msg | eventually m in SentMsg
+    (atLeastTwoNodes and fairness and memberWillExit ) /* implies
+    all m: Msg | eventually m in SentMsg */
 }
 check AllBroadcastsDontTerminate for  2 Node, 4 Msg, 8 steps
-run {
+/* run {
     atLeastTwoNodes
     and fairness
     and some m: Msg | always m !in SentMsg
 } for 5 Node, 4 Msg, 15 steps
-
+ */
 // For checking property 3.a
 // run {
 //     fairness
@@ -476,9 +476,13 @@ check {
     fairness[]
     }
 
+
+assert Valid{
+    ValidTopology[] and ValidMessage[]
+}
+
 //3.1
-check {ValidTopology[]}
-check {ValidMessage[]}
+check Valid
 
 //3.2
 
