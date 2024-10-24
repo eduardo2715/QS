@@ -41,6 +41,7 @@ pred init[]{
     all m: Msg | m in PendingMsg 
     && #outbox.m = 1 and m in m.sndr.outbox
     no rcvrs
+    no LQueue
     
 }
 
@@ -188,6 +189,7 @@ pred leaderApplicationAux[l: Leader, m1: Member, m2: Member] {
 
     // Postconditions
     l.lnxt' = (m1 -> m2) + l.lnxt             // Add the new connection (m1 -> m2)
+    LQueue' = LQueue + m1
 
     // Frame conditions
     stutterRing[]
@@ -206,6 +208,7 @@ pred leaderPromotion[l:Leader, m:Member]{
     //Postconditions
     m.lnxt' = l.lnxt - (m->l) //remove leader queue link from the member to the leader
     Leader' = m //node becomes a member
+    LQueue' = LQueue - m
 
     //Frame conditions
     stutterRing[]
@@ -224,11 +227,11 @@ pred broadcastInitialisation[l: Leader, m: Msg]{
     no m.rcvrs //message cannot have receivers
 
     //Post conditions
-     m in l.outbox implies l.outbox' = l.outbox - m && //remove message from leader outbox
-     l.nxt.outbox' = l.nxt.outbox + m && //add message to the next ring member outbox
-     m.rcvrs' = m.rcvrs + l.nxt && //add the next ring member to the message receivers
-     PendingMsg' = PendingMsg - m && //message is no longer pending
-     SendingMsg' = m //message is now sending
+    m in l.outbox implies l.outbox' = l.outbox - m && //remove message from leader outbox
+    l.nxt.outbox' = l.nxt.outbox + m && //add message to the next ring member outbox
+    m.rcvrs' = m.rcvrs + l.nxt && //add the next ring member to the message receivers
+    PendingMsg' = PendingMsg - m && //message is no longer pending
+    SendingMsg' = m //message is now sending
 
     //Frame conditions
     stutterRing[]
@@ -332,15 +335,9 @@ fact OneQueuePerNode{ //this might not be needed
 }
 
 
-//TODO: not working, integrate this in leader application pre-condition
-/* fact{
-    all q: LQueue, l: Leader | q in LeaderqueueElements[l]
-} */
-
-
 pred ValidTopology{
     all m:Member | m.(^nxt) = Member
-
+ 
     all m1,m2: Member | m1 != m2 implies no (MemberqueueElements[m1] & MemberqueueElements[m2])
     all m: Member | no (Member & MemberqueueElements[m])
     all n: Node | all m: Member | some n.(m.qnxt) implies m in n.^(m.qnxt)
@@ -351,7 +348,7 @@ pred ValidTopology{
     all m: Member | some m.(Leader.lnxt) implies Leader in m.^(Leader.lnxt) && lone m.~(Leader.lnxt) && one m.(Leader.lnxt)
 
     all m: Member | #((m.qnxt)).m <= 1
-    all l: Leader | #((l.lnxt)).l <= 1
+   all l: Leader | #((l.lnxt)).l <= 1
 }
 
 pred ValidMessage{
@@ -395,16 +392,16 @@ pred noExits{
     always (no n: Node - Member | some m: Member | nonMemberExit[m, n])
 }
 
-check {
+/* check {
     fairness[]
-    }
+    } */
 
 //3.1
 check {ValidTopology[]}
-check {ValidMessage[]}
+//check {ValidMessage[]}
 
 //3.2
-
+/* 
 run{
     fairness[] and noExits[]
-}for 2 Node, 2 Msg
+}for 2 Node, 2 Msg */

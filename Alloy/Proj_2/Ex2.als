@@ -41,6 +41,7 @@ pred init[]{
     all m: Msg | m in PendingMsg 
     && #outbox.m = 1 and m in m.sndr.outbox
     no rcvrs
+    no LQueue
     
 }
 
@@ -226,11 +227,11 @@ pred broadcastInitialisation[l: Leader, m: Msg]{
     no m.rcvrs //message cannot have receivers
 
     //Post conditions
-     m in l.outbox implies l.outbox' = l.outbox - m && //remove message from leader outbox
-     l.nxt.outbox' = l.nxt.outbox + m && //add message to the next ring member outbox
-     m.rcvrs' = m.rcvrs + l.nxt && //add the next ring member to the message receivers
-     PendingMsg' = PendingMsg - m && //message is no longer pending
-     SendingMsg' = m //message is now sending
+    m in l.outbox implies l.outbox' = l.outbox - m && //remove message from leader outbox
+    l.nxt.outbox' = l.nxt.outbox + m && //add message to the next ring member outbox
+    m.rcvrs' = m.rcvrs + l.nxt && //add the next ring member to the message receivers
+    PendingMsg' = PendingMsg - m && //message is no longer pending
+    SendingMsg' = m //message is now sending
 
     //Frame conditions
     stutterRing[]
@@ -333,11 +334,6 @@ fact OneQueuePerNode{ //this might not be needed
     all l: Leader | #((l.lnxt)).l <= 1
 }
 
-
-/* //TODO: not working, integrate this in leader application pre-condition
-fact{
-    all q: LQueue, l: Leader | q in LeaderqueueElements[l]
-} */
 
 // NETWORK CONFIGURATION
 pred h[] {
