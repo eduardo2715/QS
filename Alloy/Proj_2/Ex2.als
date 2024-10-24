@@ -188,6 +188,7 @@ pred leaderApplicationAux[l: Leader, m1: Member, m2: Member] {
 
     // Postconditions
     l.lnxt' = (m1 -> m2) + l.lnxt             // Add the new connection (m1 -> m2)
+    LQueue' = LQueue + m1
 
     // Frame conditions
     stutterRing[]
@@ -206,6 +207,7 @@ pred leaderPromotion[l:Leader, m:Member]{
     //Postconditions
     m.lnxt' = l.lnxt - (m->l) //remove leader queue link from the member to the leader
     Leader' = m //node becomes a member
+    LQueue' = LQueue - m
 
     //Frame conditions
     stutterRing[]
@@ -332,10 +334,10 @@ fact OneQueuePerNode{ //this might not be needed
 }
 
 
-//TODO: not working, integrate this in leader application pre-condition
+/* //TODO: not working, integrate this in leader application pre-condition
 fact{
     all q: LQueue, l: Leader | q in LeaderqueueElements[l]
-}
+} */
 
 // NETWORK CONFIGURATION
 pred h[] {
