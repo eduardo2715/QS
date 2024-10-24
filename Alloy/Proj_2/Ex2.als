@@ -336,7 +336,7 @@ fact OneQueuePerNode{ //this might not be needed
 
 
 // NETWORK CONFIGURATION
-pred h[] {
+pred h1[] {
     eventually ( #Member = 3   //member application + member promotion
     and
     eventually (some msg :Msg| #msg.rcvrs = 2 //broadcast initialisation + Message redirect
@@ -352,6 +352,21 @@ pred h[] {
     eventually nonMemberExit[m3, n1]))))))) // non-member exit
 }
 
+pred h2[] {
+    eventually ( #Member = 3   //member application + member promotion
+    and
+    eventually (some n1: Node - Member , m3 : Member| nonMemberExit[m3, n1] // non-member exit
+    and
+    eventually (some msg :Msg| #msg.rcvrs = 2 //broadcast initialisation + Message redirect
+    and
+    eventually (#SentMsg = 1 //broadcast termination
+    and
+    eventually (some m1: Member - Leader | leaderPromotion[Leader, m1] //leader application + leader promotion
+    and
+    eventually (some m2: Member - Leader | memberExit[m2]))))))  //member exit
+    
+}
+
 run { //takes about 5:30 minutes to run but works :)
-    h[]
-} for 5 Node, 1 Msg, 12 steps
+    h2[]
+} for 5 Node, 1 Msg, 20 steps
