@@ -127,11 +127,11 @@ fact MessageType{
 run {
     #Leader = 1 && 
     #Node >= 5 &&
-     some m1, m2: Member, l: Leader |
+     some m1, m2: Member |
         m1 != m2 &&
         some MemberQueueElements[m1] &&
         some MemberQueueElements[m2] &&
-        some LeaderqueueElements[l] &&
+        some LeaderqueueElements[Leader] &&
         #SentMsg > 0 &&
         #SendingMsg > 0 &&
         #PendingMsg > 0

@@ -373,24 +373,104 @@ pred ValidMessage{
 
 }
 
-pred fairness{
+// Separate fairness conditions for clearer structure
+pred nodeFairness {
+    // Every non-member eventually gets a chance to join a queue
+    all n: Node - Member | 
+        eventually some m: Member | n in MemberqueueElements[m]
+}
 
-    all n: Node - Member | some m: Member {
-        always eventually n in MemberqueueElements[m] implies
-        eventually n in Member implies
-        always eventually n in LeaderqueueElements[Leader] implies
-        eventually some SendingMsg implies
-        eventually always some SentMsg implies
-        always eventually no (Leader.outbox) implies
-        eventually n !in LeaderqueueElements[Leader] 
+pred memberFairness {
+    // Every member eventually gets a chance to join leader queue
+    all m: Member - Leader |
+        eventually m in LeaderqueueElements[Leader]
+    
+    // Every node in a member queue eventually becomes a member
+    all n: Node - Member, m: Member |
+        n in MemberqueueElements[m] implies eventually n in Member
+}
+
+pred leaderFairness {
+    // Leader eventually processes all requests
+    all m: Member |
+        m in LeaderqueueElements[Leader] implies 
+        eventually m !in LeaderqueueElements[Leader]
+         // Once a member joins leader queue, they stay until promoted
+    all m: Member - Leader |
+        m in LeaderqueueElements[Leader] implies
+        (m in LeaderqueueElements[Leader] until m in Leader)
+}
+
+pred messageFairness {
+    // All pending messages eventually get sent
+    all m: PendingMsg | 
+        eventually m in SendingMsg implies
+        eventually always m in SentMsg
+}
+
+// Combined fairness predicate
+pred fairness {
+    always (
+        nodeFairness and 
+        memberFairness and 
+        leaderFairness and 
+        messageFairness
+    )
+}
+
+// Modified noExits predicate to be more precise
+pred noExits {
+    all m: Member - Leader | always not memberExit[m]
+    all n: Node - Member, m: Member | always not nonMemberExit[m, n]
+}
+
+pred atLeastTwoNodes {
+    #{Node} >= 2
+}
+pred memberWillExit{
+    some m: Member | {  
+        eventually memberExit[m]
     }
 }
 
-pred noExits{
-    always no m: Member - Leader | memberExit[m]
-    and
-    always (no n: Node - Member | some m: Member | nonMemberExit[m, n])
+assert AllBroadcastsTerminate {
+      (fairness and noExits) 
 }
+
+//este asser funciona, ex 3.3 a
+check AllBroadcastsTerminate for 2 Node, 4 Msg, 8 steps
+
+//isto devia gerar um contra exemplo e nao o esta a fazer
+assert AllBroadcastsDontTerminate {
+    (atLeastTwoNodes and fairness and memberWillExit ) implies
+    all m: Msg | eventually m in SentMsg
+}
+check AllBroadcastsDontTerminate for  2 Node, 4 Msg, 8 steps
+run {
+    atLeastTwoNodes
+    and fairness
+    and some m: Msg | always m !in SentMsg
+} for 5 Node, 4 Msg, 15 steps
+
+// For checking property 3.a
+// run {
+//     fairness
+//     and noExits
+//     // Initial conditions to ensure we have at least 2 nodes
+//     and #{Node} >= 2
+//     // Ensure we have some messages to broadcast
+//     and some PendingMsg
+// } for 2 Node, 2 Msg
+// Auxiliary predicate to ensure multiple nodes have messages
+
+
+// // Run command for more complex traces
+// run {
+//     fairness
+//     and noExits
+//     and #{Node} >= 3  // Ensure we have at least 3 nodes
+//     and #{Msg} >= 3   // Ensure we have multiple messages
+// } for 5 Node, 4 Msg, 15 steps
 
 check {
     fairness[]
@@ -402,6 +482,6 @@ check {ValidMessage[]}
 
 //3.2
 
-run{
-    fairness[] and noExits[]
-}for 2 Node, 2 Msg
+// run{
+//     fairness[] and noExits[]
+// }for 2 Node, 2 Msg
