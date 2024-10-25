@@ -137,8 +137,8 @@ pred memberExit[m:Member]{ //not working properly
     //Preconditons
     m not in Leader //member isn't the leader
     m not in LeaderqueueElements[Leader] // member not in the leader queue elements
-    no (MemberqueueElements[m]) //member cant have a member queue
-    some sndr.m implies all m: sndr.m | m in SentMsg //FIXME: ??????????
+    no (MemberqueueElements[m]) //member cant have a member queue 
+    some sndr.m implies all m: sndr.m | m in SentMsg //all the member messges must be sent in order for it to leave the ring
     one (m.nxt) //member is part of the ring
 
     //Postconditions
@@ -201,7 +201,7 @@ pred leaderPromotion[l:Leader, m:Member]{
     (m -> l) in l.lnxt //the node is the first in line to become member
     m in Member - Leader //member is not a leader
     m in LeaderqueueElements[l] //node is in the leader queue elements
-    no l.outbox //FIXME: is this correct? Leader can have pending messages no?
+    no l.outbox //Leader cannot have messages in its outbox
     sndr.Leader in SentMsg //the leader has no sending message
 
     //Postconditions
@@ -219,9 +219,7 @@ pred broadcastInitialisation[m: Msg]{
     //Pre conditions
     m in Leader.outbox //message must be in the leader outbox
     Leader in m.sndr //leader must be the message sender
-    some Leader.nxt //TODO: remove
     Leader.nxt != Leader //next member in the ring cannot be the leader
-    Leader.nxt in Member //TODO: remove
     m in PendingMsg //message must be in a pending state
     no m.rcvrs //message cannot have receivers
 
@@ -372,6 +370,8 @@ pred ValidMessage{
 
 }
 
+check {ValidTopology[] and ValidMessage[]}
+
 // Separate fairness conditions for clearer structure
 pred nodeFairness {
     // Every non-member eventually gets a chance to join a queue
@@ -441,7 +441,7 @@ pred AllBroadcastsTerminate {
      all m: Msg | eventually always m in SentMsg
 }
 
-// //este asser funciona, ex 3.3 a
+// //este assert funciona, ex 3.3 a
 // check AllBroadcastsTerminate for 2 Node, 4 Msg, 8 steps
 
 //isto devia gerar um contra exemplo e nao o esta a fazer
@@ -449,54 +449,32 @@ assert AllBroadcastsDontTerminate {
     (atLeastTwoNodes and fairness and memberWillExit ) implies
     all m: Msg | eventually m in SentMsg
 }
-check AllBroadcastsDontTerminate for  2 Node, 4 Msg, 8 steps
-run {
+check AllBroadcastsDontTerminate for  2 Node, 4 Msg, 8 steps //FIXME:is this necessary
+
+run { //FIXME:is this necessary
     noExits
     and fairness
     and #Node >2
     and some Msg 
 } for 5 
-check {
+
+
+check { //fairness and no exits
     ( noExits
     and fairness
     and #Node >1
     and some Msg) implies AllBroadcastsTerminate[]
 }
 
-check {
+check { //fairness and exits
     ( fairness
     and #Node >1
     and some Msg) implies AllBroadcastsTerminate[]
 }
-// For checking property 3.a
-// run {
-//     fairness
-//     and noExits
-//     // Initial conditions to ensure we have at least 2 nodes
-//     and #{Node} >= 2
-//     // Ensure we have some messages to broadcast
-//     and some PendingMsg
-// } for 2 Node, 2 Msg
-// Auxiliary predicate to ensure multiple nodes have messages
 
-
-// // Run command for more complex traces
-// run {
-//     fairness
-//     and noExits
-//     and #{Node} >= 3  // Ensure we have at least 3 nodes
-//     and #{Msg} >= 3   // Ensure we have multiple messages
-// } for 5 Node, 4 Msg, 15 steps
-
-check {
+check { //only fairness
     fairness[]
     }
 
-//3.1
-check {ValidTopology[] and ValidMessage[]}
 
-//3.2
 
-// run{
-//     fairness[] and noExits[]
-// }for 2 Node, 2 Msg
