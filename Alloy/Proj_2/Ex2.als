@@ -366,6 +366,9 @@ pred h2[] {
     eventually (some m2: Member - Leader | memberExit[m2]))))))  //member exit
     
 }
+run { //takes about 5:30 minutes to run but works :)
+    h1[]
+} for 5 Node, 1 Msg, 20 steps
 
 run { //takes about 5:30 minutes to run but works :)
     h2[]

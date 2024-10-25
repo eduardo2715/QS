@@ -139,7 +139,6 @@ pred memberExit[m:Member]{ //not working properly
     m not in LeaderqueueElements[Leader] // member not in the leader queue elements
     no (MemberqueueElements[m]) //member cant have a member queue
     some sndr.m implies all m: sndr.m | m in SentMsg //FIXME: ??????????
-    no (m.outbox) //FIXME: can the member have pending messages or no messages
     one (m.nxt) //member is part of the ring
 
     //Postconditions
@@ -216,20 +215,20 @@ pred leaderPromotion[l:Leader, m:Member]{
     stutterMessage[]
 }
 
-pred broadcastInitialisation[l: Leader, m: Msg]{
+pred broadcastInitialisation[m: Msg]{
     //Pre conditions
-    m in l.outbox //message must be in the leader outbox
-    l in m.sndr //leader must be the message sender
-    some l.nxt //TODO: remove
-    l.nxt != l //next member in the ring cannot be the leader
-    l.nxt in Member //TODO: remove
+    m in Leader.outbox //message must be in the leader outbox
+    Leader in m.sndr //leader must be the message sender
+    some Leader.nxt //TODO: remove
+    Leader.nxt != Leader //next member in the ring cannot be the leader
+    Leader.nxt in Member //TODO: remove
     m in PendingMsg //message must be in a pending state
     no m.rcvrs //message cannot have receivers
 
     //Post conditions
-    m in l.outbox implies l.outbox' = l.outbox - m && //remove message from leader outbox
-    l.nxt.outbox' = l.nxt.outbox + m && //add message to the next ring member outbox
-    m.rcvrs' = m.rcvrs + l.nxt && //add the next ring member to the message receivers
+    m in Leader.outbox implies Leader.outbox' = Leader.outbox - m && //remove message from leader outbox
+    Leader.nxt.outbox' = Leader.nxt.outbox + m && //add message to the next ring member outbox
+    m.rcvrs' = m.rcvrs + Leader.nxt && //add the next ring member to the message receivers
     PendingMsg' = PendingMsg - m && //message is no longer pending
     SendingMsg' = m //message is now sending
 
@@ -300,7 +299,7 @@ pred trans[] {
     or 
     (some l: Leader | some m: Member  | leaderPromotion[l,m])
     or 
-    (some l: Leader, m: Msg | broadcastInitialisation[l,m])
+    (some m: Msg | broadcastInitialisation[m])
     or 
     (some m: Member | some sm: Msg | MessageRedirect[m, sm])
     or
@@ -394,11 +393,14 @@ pred leaderFairness {
     // Leader eventually processes all requests
     all m: Member |
         m in LeaderqueueElements[Leader] implies 
-        eventually m !in LeaderqueueElements[Leader]
+        eventually m !in LeaderqueueElements[Leader] implies
+        all msg: Msg | msg.sndr = m implies eventually always msg in SentMsg
          // Once a member joins leader queue, they stay until promoted
     all m: Member - Leader |
         m in LeaderqueueElements[Leader] implies
         (m in LeaderqueueElements[Leader] until m in Leader)
+
+    all msg: Msg | msg.sndr = Leader implies eventually always msg in SentMsg
 }
 
 pred messageFairness {
@@ -406,6 +408,8 @@ pred messageFairness {
     all m: PendingMsg | 
         eventually m in SendingMsg implies
         eventually always m in SentMsg
+    // all node: Node | all msg: Msg |
+    // eventually always msg.sndr = node implies msg in SentMsg
 }
 
 // Combined fairness predicate
@@ -433,12 +437,12 @@ pred memberWillExit{
     }
 }
 
-assert AllBroadcastsTerminate {
-      (fairness and noExits) 
+pred AllBroadcastsTerminate {
+     all m: Msg | eventually always m in SentMsg
 }
 
-//este asser funciona, ex 3.3 a
-check AllBroadcastsTerminate for 2 Node, 4 Msg, 8 steps
+// //este asser funciona, ex 3.3 a
+// check AllBroadcastsTerminate for 2 Node, 4 Msg, 8 steps
 
 //isto devia gerar um contra exemplo e nao o esta a fazer
 assert AllBroadcastsDontTerminate {
@@ -447,11 +451,23 @@ assert AllBroadcastsDontTerminate {
 }
 check AllBroadcastsDontTerminate for  2 Node, 4 Msg, 8 steps
 run {
-    atLeastTwoNodes
+    noExits
     and fairness
-    and some m: Msg | always m !in SentMsg
-} for 5 Node, 4 Msg, 15 steps
+    and #Node >2
+    and some Msg 
+} for 5 
+check {
+    ( noExits
+    and fairness
+    and #Node >1
+    and some Msg) implies AllBroadcastsTerminate[]
+}
 
+check {
+    ( fairness
+    and #Node >1
+    and some Msg) implies AllBroadcastsTerminate[]
+}
 // For checking property 3.a
 // run {
 //     fairness
@@ -477,8 +493,7 @@ check {
     }
 
 //3.1
-check {ValidTopology[]}
-check {ValidMessage[]}
+check {ValidTopology[] and ValidMessage[]}
 
 //3.2
 
