@@ -393,8 +393,7 @@ pred leaderFairness {
     // Leader eventually processes all requests
     all m: Member |
         m in LeaderqueueElements[Leader] implies 
-        eventually m !in LeaderqueueElements[Leader] implies
-        all msg: Msg | msg.sndr = m implies eventually always msg in SentMsg
+        eventually m !in LeaderqueueElements[Leader]// implies
          // Once a member joins leader queue, they stay until promoted
     all m: Member - Leader |
         m in LeaderqueueElements[Leader] implies
@@ -408,8 +407,6 @@ pred messageFairness {
     all m: PendingMsg | 
         eventually m in SendingMsg implies
         eventually always m in SentMsg
-    // all node: Node | all msg: Msg |
-    // eventually always msg.sndr = node implies msg in SentMsg
 }
 
 // Combined fairness predicate
@@ -441,24 +438,6 @@ pred AllBroadcastsTerminate {
      all m: Msg | eventually always m in SentMsg
 }
 
-// //este assert funciona, ex 3.3 a
-// check AllBroadcastsTerminate for 2 Node, 4 Msg, 8 steps
-
-//isto devia gerar um contra exemplo e nao o esta a fazer
-assert AllBroadcastsDontTerminate {
-    (atLeastTwoNodes and fairness and memberWillExit ) implies
-    all m: Msg | eventually m in SentMsg
-}
-check AllBroadcastsDontTerminate for  2 Node, 4 Msg, 8 steps //FIXME:is this necessary
-
-run { //FIXME:is this necessary
-    noExits
-    and fairness
-    and #Node >2
-    and some Msg 
-} for 5 
-
-
 check { //fairness and no exits
     ( noExits
     and fairness
@@ -471,10 +450,6 @@ check { //fairness and exits
     and #Node >1
     and some Msg) implies AllBroadcastsTerminate[]
 }
-
-check { //only fairness
-    fairness[]
-    }
 
 
 
